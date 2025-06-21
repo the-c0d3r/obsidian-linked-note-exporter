@@ -1,134 +1,293 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import {
+  Plugin,
+  TFile,
+  Notice,
+  Menu,
+  PluginSettingTab,
+  App,
+  Setting
+} from "obsidian";
 
-// Remember to rename these classes and interfaces!
+import JSZip from "jszip";
 
-interface MyPluginSettings {
-	mySetting: string;
+// -------------------------
+// Plugin Settings
+// -------------------------
+interface ExportPluginSettings {
+  linkDepth: number;
+  zipOutput: boolean;
+  ignoreFolders: string[]; // e.g. ["Templates", "Archive"]
+  ignoreTags: string[];    // e.g. ["#draft", "#private"]
 }
 
-const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+const DEFAULT_SETTINGS: ExportPluginSettings = {
+  linkDepth: 1,
+  zipOutput: false,
+  ignoreFolders: [],
+  ignoreTags: []
+};
+
+// -------------------------
+// Main Plugin Class
+// -------------------------
+export default class ExportPlugin extends Plugin {
+  settings: ExportPluginSettings;
+
+  async onload() {
+    await this.loadSettings();
+    this.addSettingTab(new ExportSettingTab(this.app, this));
+
+    this.addCommand({
+      id: "linked-note-exporter",
+      name: "Export Note with Linked Files",
+      callback: () => this.exportCurrentNote()
+    });
+
+    this.registerEvent(
+      this.app.workspace.on("file-menu", (menu, file) => {
+        if (file instanceof TFile && file.extension === "md") {
+          menu.addItem(item =>
+            item
+              .setTitle("Export Note with Linked Files")
+              .setIcon("export")
+              .onClick(() => this.exportNote(file))
+          );
+        }
+      })
+    );
+  }
+
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
+  async exportCurrentNote() {
+    const file = this.app.workspace.getActiveFile();
+    if (!file) {
+      new Notice("No active note.");
+      return;
+    }
+    await this.exportNote(file);
+  }
+
+  async exportNote(file: TFile) {
+    const dirHandle = await (window as any).showDirectoryPicker?.();
+    if (!dirHandle) {
+      new Notice("Export cancelled.");
+      return;
+    }
+
+    const allFilesToCopy = new Map<string, TFile>();
+    const visited = new Set<string>();
+
+    const processFile = async (f: TFile, level = 0) => {
+      if (visited.has(f.path) || level > this.settings.linkDepth) return;
+      if (this.shouldExcludeFile(f)) return; // Skip excluded
+
+      visited.add(f.path);
+      allFilesToCopy.set(f.path, f);
+
+      if (f.extension !== "md") return;
+
+      const content = await this.app.vault.read(f);
+      const linkedPaths = this.getLinkedPaths(content);
+
+      for (const p of linkedPaths) {
+        const linked = this.app.metadataCache.getFirstLinkpathDest(p, f.path);
+        if (linked) await processFile(linked, level + 1);
+      }
+    };
+
+    await processFile(file, 0);
+
+    // Write files
+    for (const [, fileObj] of allFilesToCopy) {
+      const targetFile = await dirHandle.getFileHandle(fileObj.name, { create: true });
+      const writable = await targetFile.createWritable();
+
+      if (fileObj.extension === "md") {
+        let content = await this.app.vault.read(fileObj);
+        content = this.rewriteLinks(content);
+        const encoded = new TextEncoder().encode(content);
+        await writable.write(encoded);
+      } else {
+        const bin = await this.app.vault.readBinary(fileObj);
+        await writable.write(bin);
+      }
+
+      await writable.close();
+    }
+
+    if (this.settings.zipOutput) {
+      await this.zipDirectory(dirHandle);
+    }
+
+    new Notice(`Exported ${allFilesToCopy.size} files${this.settings.zipOutput ? " (zipped)" : ""}.`);
+  }
+
+  getLinkedPaths(content: string): string[] {
+    const links = new Set<string>();
+
+    const mdLinks = content.match(/\[\[([^\]]+?)\]\]/g) || [];
+    const embeds = content.match(/!\[\[([^\]]+?)\]\]/g) || [];
+
+    [...mdLinks, ...embeds].forEach(link => {
+      const clean = link.replace(/!\[\[|\[\[|\]\]/g, "").split("|")[0];
+      links.add(clean);
+    });
+
+    return Array.from(links);
+  }
+
+  rewriteLinks(content: string): string {
+    return content.replace(/\[\[([^\]]+?)(\|.*?)?\]\]/g, (match, path, alias) => {
+      let name = path;
+      if (!name.endsWith(".md")) name += ".md";
+      return `[[${name}${alias || ""}]]`;
+    });
+  }
+
+  matchesIgnore(tag: string, ignoreList: string[]): boolean {
+    for (const pattern of ignoreList) {
+      // if the pattern ends with "/*", e.g. "#personal/*", also ignore "#personal"
+      if (pattern.endsWith("/*")) {
+        const prefix = pattern.slice(0, -2); // remove /*
+        if (tag.startsWith(prefix + "/")) return true;
+      } else {
+        if (tag === pattern) return true;
+      }
+    }
+    return false;
+  }
+
+  matchesIgnoreTags(tags: string[], ignoreList: string[]): boolean {
+    return tags.some(tag => this.matchesIgnore(tag, ignoreList));
+  }
+
+  shouldExcludeFile(file: TFile): boolean {
+    // Ignore by folder
+    if (this.settings.ignoreFolders.some(folder =>
+      file.path.startsWith(folder + "/")
+    )) return true;
+
+    // Ignore by tag
+    const cache = this.app.metadataCache.getFileCache(file);
+    if (!cache) return false;
+
+    let frontmatterTags: string[] = [];
+    const rawTags = cache.frontmatter?.tags;
+
+    // Normalize to array of strings
+    if (Array.isArray(rawTags)) {
+      frontmatterTags = rawTags.map(String);
+    } else if (typeof rawTags === "string") {
+      frontmatterTags = [rawTags];
+    }
+
+    // Normalize tags to #tag format
+    frontmatterTags = frontmatterTags.map(tag =>
+      tag.startsWith("#") ? tag : `#${tag}`
+    );
+
+    // Check inline tags
+    const inlineTags = (cache.tags ?? []).map(t => t.tag);
+    const allTags = [...frontmatterTags, ...inlineTags];
+
+    // Check exclusion
+    if (allTags.some(tag => this.matchesIgnore(tag, this.settings.ignoreTags))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async zipDirectory(dirHandle: any) {
+    const zip = new JSZip();
+
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === "file") {
+        const file = await entry.getFile();
+        const content = await file.arrayBuffer();
+        zip.file(file.name, content);
+      }
+    }
+
+    const blob = await zip.generateAsync({ type: "blob" });
+
+    const zipHandle = await dirHandle.getFileHandle("export.zip", { create: true });
+    const writable = await zipHandle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  }
 }
 
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
+// -------------------------
+// Settings UI
+// -------------------------
+class ExportSettingTab extends PluginSettingTab {
+  plugin: ExportPlugin;
 
-	async onload() {
-		await this.loadSettings();
+  constructor(app: App, plugin: ExportPlugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
 
-		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-		// Perform additional things with the ribbon
-		ribbonIconEl.addClass('my-plugin-ribbon-class');
+  display(): void {
+    const { containerEl } = this;
+    containerEl.empty();
+    containerEl.createEl("h2", { text: "Linked Note Exporter Settings" });
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
+    new Setting(containerEl)
+      .setName("Link Depth")
+      .setDesc("How many levels of linked notes to include")
+      .addSlider(slider =>
+        slider
+          .setLimits(0, 10, 1)
+          .setValue(this.plugin.settings.linkDepth)
+          .setDynamicTooltip()
+          .onChange(async (value) => {
+            this.plugin.settings.linkDepth = value;
+            await this.plugin.saveSettings();
+          })
+      );
 
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'sample-editor-command',
-			name: 'Sample editor command',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				console.log(editor.getSelection());
-				editor.replaceSelection('Sample Editor Command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-sample-modal-complex',
-			name: 'Open sample modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
+    new Setting(containerEl)
+      .setName("Zip Export")
+      .setDesc("Whether to zip the exported files into export.zip")
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.zipOutput)
+          .onChange(async (val) => {
+            this.plugin.settings.zipOutput = val;
+            await this.plugin.saveSettings();
+          })
+      );
 
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
+    new Setting(containerEl)
+      .setName("Ignore Folder Paths")
+      .setDesc("Comma-separated folder names to exclude from export")
+      .addText(text => text
+        .setPlaceholder("e.g. Templates, Archive")
+        .setValue(this.plugin.settings.ignoreFolders.join(","))
+        .onChange(async (value) => {
+          this.plugin.settings.ignoreFolders = value.split(",").map(s => s.trim()).filter(Boolean);
+          await this.plugin.saveSettings();
+        }));
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-	}
-
-	onunload() {
-
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+    new Setting(containerEl)
+      .setName("Ignore Tags")
+      .setDesc("Comma-separated tags to exclude linked files")
+      .addText(text => text
+        .setPlaceholder("e.g. #people/*, #personal")
+        .setValue(this.plugin.settings.ignoreTags.join(","))
+        .onChange(async (value) => {
+          this.plugin.settings.ignoreTags = value.split(",").map(s => s.trim()).filter(Boolean);
+          await this.plugin.saveSettings();
+        }));
+  }
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
-
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
-
-	constructor(app: App, plugin: MyPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const {containerEl} = this;
-
-		containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
-	}
-}
