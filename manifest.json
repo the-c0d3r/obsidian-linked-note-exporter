@@ -6,5 +6,8 @@
 	"description": "Export a note with its attachments and linked notes (configurable depth, configurable ignore folders/tags).",
 	"author": "the-c0d3r",
 	"authorUrl": "",
-	"main": "main.js"
+	"main": "main.js",
+	"fundingUrl": {
+		"Buy Me a Coffee": "https://coff.ee/the.c0d3r"
+	}
 }
