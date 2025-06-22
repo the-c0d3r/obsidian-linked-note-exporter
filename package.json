@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "obsidian-linked-note-exporter",
+	"version": "0.1.0",
+	"description": "Export a note with its attachments and linked notes (configurable depth, configurable ignore folders/tags).",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
