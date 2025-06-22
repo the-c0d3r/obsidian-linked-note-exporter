@@ -40,8 +40,8 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 ### `Ignore Tags`
 - Notes with these tags will be skipped.
 - Supports wildcards:  
-  - `#personal/*` excludes tags like `#personal/notes`, `#personal/thoughts`, etc.  
-  - `#personal` by itself excludes that tag only.
+  - `#personal/*` excludes tags like `#personal/notes`, `#personal/thoughts`, etc. This also excludes `#personal`.
+  - `#private` by itself excludes that tag only.
 
 ## 🧭 How to Use
 
