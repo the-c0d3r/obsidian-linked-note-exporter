@@ -1,16 +1,88 @@
 # Obsidian Linked Note Exporter
 
+Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault.
 
-This plugin is created to help with the exporting of your notes with all the linked notes and attachments.
+## ✨ Features
 
-I have personally found cases where I want to share my notes to someone else and found that it is very hard to export the note that has image attachments and also links to other notes which I also wanted to share. So I created this plugin to serve that purpose. 
+- Export a note to a directory outside your vault
+- Include all embedded/linked files (images, PDFs, etc.)
+- Include notes linked from the source note, up to configurable link depth
+- Optionally zip the export
+- Exclude notes by folder or tag
+- Trigger from the **right-click context menu** or **command palette**
+
+## 🛠️ Use Case
+
+You’ve crafted a beautiful note with images and cross-links—but sharing it with a colleague becomes a tangled mess of missing files and broken links. This plugin solves that elegantly by exporting a self-contained bundle of everything related to that note.
+
+---
+
+## ⚙️ Settings
+
+### `Zip Export`
+- If enabled, the exported files will be zipped into `export.zip` inside the target directory.
+
+### `Link Depth`
+- Determines how many levels of linked notes are exported.
+- `1` includes directly linked notes.
+- `2` includes notes linked by those notes, and so on.
+
+### `Ignore Folders`
+- Notes located in these folders will be skipped during export.
+- Useful for ignoring private, work-related, or archival material.
+
+### `Ignore Tags`
+- Notes with these tags will be skipped.
+- Supports wildcards:  
+  - `#personal/*` excludes tags like `#personal/notes`, `#personal/thoughts`, etc.  
+  - `#personal` by itself excludes that tag only.
+
+---
+
+## 🧭 How to Use
+
+- **Right-Click Export**: Right-click any markdown file in the file explorer → `Export with Linked Content`
+- **Command Palette**: Trigger `Export Note with Linked Files`
+
+---
+
+## 🧪 Install via BRAT (Beta Reviewers Auto-update Tool)
+
+1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat)
+2. In BRAT settings, click `Add a GitHub Repo`
+3. Enter the GitHub repo in the format: `the-c0d3r/obsidian-linked-note-exporter`  
+4. Click `Install Plugin`  
+5. Enable the plugin from the Community Plugins list
+
+---
+
+## 📁 Export Output
+
+- All selected notes and attachments will be copied to your chosen directory
+- Internal links are updated to ensure integrity
+- Optionally zipped if the setting is enabled
+
+---
+
+## 📌 Roadmap / TODO
+
+- More link handling options (e.g., block links)
+- CLI integration (?)
+
+---
+
+## 🧑‍💻 Author
+
+Crafted by someone who just wanted exporting notes to *work*.  
+Use it, fork it, improve it.
+
+---
 
 
-## Configurations
-- zip export: if turned on will create a zip file called `export.zip` in your export directory.
-- link depth: how many levels of links you want to export, level 1 would mean any notes that are linked from your note to be exported, level 2 would be those notes plus any other notes in those linked notes, and so on.
-- ignore folders: notes from these folders will be ignored when you trigger export. This is useful to ignore folders that are private, or maybe work related.
-- ignore tags: notes with this tag (inline tag or properties) will be ignored. If you set `#personal/*` then anything that has the prefix `#personal/` such as `#personal/notes` will be ignored, including `#personal` tag itself. This is useful to prevent exporting any notes that are private to you.
+## ☕ Support This Plugin
 
+If this plugin saved you some time—or your sanity—you can buy me a coffee: 
 
-You can right click on a markdown file from file explorer to export, or trigger command prompt to do "Export Note with Linked Files".
+https://buymeacoffee.com/the.c0d3r
+
+Your support helps keep the keyboard clicking and the plugins flowing.
