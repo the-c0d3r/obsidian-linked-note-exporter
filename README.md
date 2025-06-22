@@ -2,6 +2,14 @@
 
 Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault.
 
+## 🖼️ Screenshots
+![Configuration options](assets/config.png)
+
+![Command Palette](assets/command-palette.png)
+
+![File Menu](assets/file-menu.png)
+
+
 ## ✨ Features
 
 - Export a note to a directory outside your vault
