@@ -49,7 +49,7 @@ export default class ExportPlugin extends Plugin {
           menu.addItem(item =>
             item
               .setTitle("Export Note with Linked Files")
-              .setIcon("export")
+              .setIcon("package-plus")
               .onClick(() => this.exportNote(file))
           );
         }
