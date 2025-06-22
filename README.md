@@ -15,8 +15,6 @@ Export a note along with all its attachments and linked notes—cleanly, conveni
 
 You’ve crafted a beautiful note with images and cross-links—but sharing it with a colleague becomes a tangled mess of missing files and broken links. This plugin solves that elegantly by exporting a self-contained bundle of everything related to that note.
 
----
-
 ## ⚙️ Settings
 
 ### `Zip Export`
@@ -37,14 +35,10 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
   - `#personal/*` excludes tags like `#personal/notes`, `#personal/thoughts`, etc.  
   - `#personal` by itself excludes that tag only.
 
----
-
 ## 🧭 How to Use
 
 - **Right-Click Export**: Right-click any markdown file in the file explorer → `Export with Linked Content`
 - **Command Palette**: Trigger `Export Note with Linked Files`
-
----
 
 ## 🧪 Install via BRAT (Beta Reviewers Auto-update Tool)
 
@@ -54,29 +48,25 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 4. Click `Install Plugin`  
 5. Enable the plugin from the Community Plugins list
 
----
-
 ## 📁 Export Output
 
 - All selected notes and attachments will be copied to your chosen directory
 - Internal links are updated to ensure integrity
 - Optionally zipped if the setting is enabled
 
----
-
 ## 📌 Roadmap / TODO
 
 - More link handling options (e.g., block links)
 - CLI integration (?)
-
----
 
 ## 🧑‍💻 Author
 
 Crafted by someone who just wanted exporting notes to *work*.  
 Use it, fork it, improve it.
 
----
+## 📄 License
+
+This plugin is released under the MIT License.
 
 
 ## ☕ Support This Plugin
