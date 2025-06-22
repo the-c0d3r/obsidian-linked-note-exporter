@@ -2,14 +2,6 @@
 
 Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault.
 
-## 🖼️ Screenshots
-![Configuration options](assets/config.png)
-
-![Command Palette](assets/command-palette.png)
-
-![File Menu](assets/file-menu.png)
-
-
 ## ✨ Features
 
 - Export a note to a directory outside your vault
@@ -22,6 +14,14 @@ Export a note along with all its attachments and linked notes—cleanly, conveni
 ## 🛠️ Use Case
 
 You’ve crafted a beautiful note with images and cross-links—but sharing it with a colleague becomes a tangled mess of missing files and broken links. This plugin solves that elegantly by exporting a self-contained bundle of everything related to that note.
+
+## 🖼️ Screenshots
+![Configuration options](assets/config.png)
+
+![Command Palette](assets/command-palette.png)
+
+![File Menu](assets/file-menu.png)
+
 
 ## ⚙️ Settings
 
