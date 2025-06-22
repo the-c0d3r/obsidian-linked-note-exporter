@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-linked-note-exporter",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Export a note with its attachments and linked notes (configurable depth, configurable ignore folders/tags).",
 	"main": "main.js",
 	"scripts": {
