@@ -5,9 +5,9 @@
 	"minAppVersion": "0.15.0",
 	"description": "Export a note with its attachments and linked notes (configurable depth, configurable ignore folders/tags).",
 	"author": "the-c0d3r",
-	"authorUrl": "",
-	"main": "main.js",
+	"authorUrl": "https://github.com/the-c0d3r/",
 	"fundingUrl": {
 		"Buy Me a Coffee": "https://coff.ee/the.c0d3r"
-	}
+	},
+	"isDesktopOnly": true
 }
