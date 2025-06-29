@@ -22,6 +22,7 @@
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
+		"@types/wicg-file-system-access": "^2023.10.6",
 		"jszip": "^3.10.1"
 	}
 }

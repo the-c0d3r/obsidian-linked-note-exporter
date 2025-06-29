@@ -75,7 +75,7 @@ export default class ExportPlugin extends Plugin {
   }
 
   async exportNote(file: TFile) {
-    const dirHandle = await (window as any).showDirectoryPicker?.();
+    const dirHandle = await window.showDirectoryPicker();
     if (!dirHandle) {
       new Notice("Export cancelled.");
       return;
@@ -205,7 +205,7 @@ export default class ExportPlugin extends Plugin {
     return false;
   }
 
-  async zipDirectory(dirHandle: any) {
+  async zipDirectory(dirHandle: FileSystemDirectoryHandle) {
     const zip = new JSZip();
 
     for await (const entry of dirHandle.values()) {
