@@ -39,7 +39,7 @@ export default class ExportPlugin extends Plugin {
 
     this.addCommand({
       id: "linked-note-exporter",
-      name: "Export Note with Linked Files",
+      name: "Export note with linked files",
       callback: () => this.exportCurrentNote()
     });
 
@@ -48,7 +48,7 @@ export default class ExportPlugin extends Plugin {
         if (file instanceof TFile && file.extension === "md") {
           menu.addItem(item =>
             item
-              .setTitle("Export Note with Linked Files")
+              .setTitle("Export note with linked files")
               .setIcon("package-plus")
               .onClick(() => this.exportNote(file))
           );
@@ -239,10 +239,9 @@ class ExportSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Linked Note Exporter Settings" });
 
     new Setting(containerEl)
-      .setName("Link Depth")
+      .setName("Link depth")
       .setDesc("How many levels of linked notes to include")
       .addSlider(slider =>
         slider
@@ -256,7 +255,7 @@ class ExportSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Zip Export")
+      .setName("Zip export")
       .setDesc("Whether to zip the exported files into export.zip")
       .addToggle(toggle =>
         toggle
@@ -268,7 +267,7 @@ class ExportSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Ignore Folder Paths")
+      .setName("Ignore folder paths")
       .setDesc("Comma-separated folder names to exclude from export")
       .addText(text => text
         .setPlaceholder("e.g. Templates, Archive")
@@ -279,7 +278,7 @@ class ExportSettingTab extends PluginSettingTab {
         }));
 
     new Setting(containerEl)
-      .setName("Ignore Tags")
+      .setName("Ignore tags")
       .setDesc("Comma-separated tags to exclude linked files")
       .addText(text => text
         .setPlaceholder("e.g. #people/*, #personal")
