@@ -1,4 +1,4 @@
-# Obsidian Linked Note Exporter
+# Linked Note Exporter
 
 Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault.
 
