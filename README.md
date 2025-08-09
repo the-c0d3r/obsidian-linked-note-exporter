@@ -37,7 +37,7 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 
 -   If enabled, the exported files will be zipped into `export.zip` inside the target directory.
 
-## `Maintain Folder Structure`
+### `Maintain Folder Structure`
 
 - If enabled, the export files or zip will maintain the same directory structure as the original file path
 
