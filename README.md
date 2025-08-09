@@ -23,17 +23,23 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 
 ![File Menu](assets/file-menu.png)
 
+![Export Modal](assets/export-modal.png)
+
 ## ⚙️ Settings
-
-### `Zip Export`
-
--   If enabled, the exported files will be zipped into `export.zip` inside the target directory.
 
 ### `Link Depth`
 
 -   Determines how many levels of linked notes are exported.
 -   `1` includes directly linked notes.
 -   `2` includes notes linked by those notes, and so on.
+
+### `Zip Export`
+
+-   If enabled, the exported files will be zipped into `export.zip` inside the target directory.
+
+## `Maintain Folder Structure`
+
+- If enabled, the export files or zip will maintain the same directory structure as the original file path
 
 ### `Ignore Folders`
 
