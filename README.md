@@ -39,7 +39,7 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 
 ### `Maintain Folder Structure`
 
-- If enabled, the export files or zip will maintain the same directory structure as the original file path
+-   If enabled, the export files or zip will maintain the same directory structure as the original file path
 
 ### `Ignore Folders`
 
@@ -58,13 +58,13 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 -   **Right-Click Export**: Right-click any markdown file in the file explorer → `Export with Linked Content`
 -   **Command Palette**: Trigger `Export Note with Linked Files`
 
-## 🧪 Install via BRAT (Beta Reviewers Auto-update Tool)
+## 🧪 Install from community plugin list
 
-1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat)
-2. In BRAT settings, click `Add a GitHub Repo`
-3. Enter the GitHub repo in the format: `the-c0d3r/obsidian-linked-note-exporter`
-4. Click `Install Plugin`
-5. Enable the plugin from the Community Plugins list
+1. Open Settings.
+2. Select Turn on community plugins.
+3. Select Browse to list all available community plugins.
+4. Search for "Linked Note Exporter" and click install.
+5. Enable the plugin from the Community Plugins list.
 
 ## 📁 Export Output
 
