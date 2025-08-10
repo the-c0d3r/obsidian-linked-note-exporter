@@ -9,9 +9,9 @@ export class ExportConfirmationModal extends Modal {
 	private filesToExport: Map<string, TFile>;
 	private filteredFiles: Map<string, FilteredFile>;
 	private zipToggle: HTMLInputElement;
-	private maintainFolderStructureToggle: HTMLInputElement;
+	private keepFolderStructureToggle: HTMLInputElement;
 	private defaultZipSetting: boolean;
-	private defaultmaintainFolderStructureSetting: boolean;
+	private defaultkeepFolderStructureSetting: boolean;
 	private fileCheckboxes: Map<string, HTMLInputElement>;
 	private linkDepthSlider: HTMLInputElement;
 	private currentLinkDepth: number;
@@ -23,7 +23,7 @@ export class ExportConfirmationModal extends Modal {
 		app: App,
 		sourceFile: TFile,
 		defaultZipSetting: boolean,
-		defaultmaintainFolderStructureSetting: boolean,
+		defaultkeepFolderStructureSetting: boolean,
 		resolve: (value: ExportModalResult) => void,
 		plugin: any,
 	) {
@@ -32,8 +32,8 @@ export class ExportConfirmationModal extends Modal {
 		this.filesToExport = new Map();
 		this.filteredFiles = new Map();
 		this.defaultZipSetting = defaultZipSetting;
-		this.defaultmaintainFolderStructureSetting =
-			defaultmaintainFolderStructureSetting;
+		this.defaultkeepFolderStructureSetting =
+			defaultkeepFolderStructureSetting;
 		this.resolve = resolve;
 		this.plugin = plugin;
 		this.currentLinkDepth = plugin.settings.linkDepth;
@@ -404,14 +404,14 @@ export class ExportConfirmationModal extends Modal {
 		dirLabel.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
 		dirLabel.style.cursor = "pointer";
 		dirLabel.title = "Preserve the original folder hierarchy in the export";
-		this.maintainFolderStructureToggle = dirLabel.createEl("input", {
+		this.keepFolderStructureToggle = dirLabel.createEl("input", {
 			type: "checkbox",
 		});
-		this.maintainFolderStructureToggle.checked =
-			this.defaultmaintainFolderStructureSetting;
-		this.maintainFolderStructureToggle.style.margin = "0";
+		this.keepFolderStructureToggle.checked =
+			this.defaultkeepFolderStructureSetting;
+		this.keepFolderStructureToggle.style.margin = "0";
 		const dirToggleText = dirLabel.createEl("span");
-		dirToggleText.createEl("strong", { text: "Maintain folder structure" });
+		dirToggleText.createEl("strong", { text: "Keep folder structure" });
 	}
 
 	private createButtons() {
@@ -437,8 +437,8 @@ export class ExportConfirmationModal extends Modal {
 			this.resolve({
 				confirmed: false,
 				createZip: false,
-				maintainFolderStructure:
-					this.maintainFolderStructureToggle.checked,
+				keepFolderStructure:
+					this.keepFolderStructureToggle.checked,
 				selectedFiles: [],
 				linkDepth: this.currentLinkDepth,
 				ignoreFolders: this.ignoreFoldersInput.value
@@ -468,8 +468,8 @@ export class ExportConfirmationModal extends Modal {
 			this.resolve({
 				confirmed: true,
 				createZip: this.zipToggle.checked,
-				maintainFolderStructure:
-					this.maintainFolderStructureToggle.checked,
+				keepFolderStructure:
+					this.keepFolderStructureToggle.checked,
 				selectedFiles,
 				linkDepth: this.currentLinkDepth,
 				ignoreFolders: this.ignoreFoldersInput.value

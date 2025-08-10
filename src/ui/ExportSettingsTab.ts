@@ -51,17 +51,17 @@ export class ExportSettingsTab extends PluginSettingTab {
 					}),
 			);
 
-		// Maintain Directory Structure Setting
+		// Keep Directory Structure Setting
 		new Setting(containerEl)
-			.setName("Default Maintain Folder Structure")
+			.setName("Default Keep Folder Structure")
 			.setDesc(
-				"Whether to maintain folder structure by default when exporting files (ZIP and regular exports)",
+				"Whether to keep folder structure by default when exporting files (ZIP and regular exports)",
 			)
 			.addToggle((toggle) =>
 				toggle
-					.setValue(this.plugin.settings.maintainFolderStructure)
+					.setValue(this.plugin.settings.keepFolderStructure)
 					.onChange(async (value) => {
-						this.plugin.settings.maintainFolderStructure = value;
+						this.plugin.settings.keepFolderStructure = value;
 						await this.plugin.saveSettings();
 					}),
 			);

@@ -3,7 +3,7 @@ import { ExportPluginSettings } from "../types";
 export const DEFAULT_SETTINGS: ExportPluginSettings = {
 	linkDepth: 1,
 	zipOutput: false,
-	maintainFolderStructure: false,
+	keepFolderStructure: false,
 	ignoreFolders: [],
 	ignoreTags: [],
 };

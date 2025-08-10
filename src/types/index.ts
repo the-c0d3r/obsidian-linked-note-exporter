@@ -26,7 +26,7 @@ export type {
 export interface ExportPluginSettings {
 	linkDepth: number;
 	zipOutput: boolean;
-	maintainFolderStructure: boolean; // Whether to maintain directory structure in exports (both ZIP and regular)
+	keepFolderStructure: boolean; // Whether to maintain directory structure in exports (both ZIP and regular)
 	ignoreFolders: string[]; // e.g. ["Templates", "Archive"]
 	ignoreTags: string[]; // e.g. ["#draft", "#private"]
 }
@@ -35,7 +35,7 @@ export interface ExportPluginSettings {
 export interface ExportModalResult {
 	confirmed: boolean; // Whether the user confirmed the export action
 	createZip: boolean; // Whether to export files as a ZIP archive
-	maintainFolderStructure: boolean; // Whether to maintain directory structure in exports (both ZIP and regular)
+	keepFolderStructure: boolean; // Whether to keep directory structure in exports (both ZIP and regular)
 	selectedFiles: TFile[]; // The list of files selected for export
 	linkDepth: number; // The link depth chosen by the user for linked file traversal
 	ignoreFolders: string[]; // Folder names to exclude from export (user input)

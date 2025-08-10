@@ -15,20 +15,20 @@ export class ExportService {
 		files: TFile[],
 		targetDir: FileSystemDirectoryHandle,
 		createZip: boolean = false,
-		maintainFolderStructure: boolean = false,
+		keepFolderStructure: boolean = false,
 	): Promise<void> {
 		try {
 			if (createZip) {
 				await this.exportAsZip(
 					files,
 					targetDir,
-					maintainFolderStructure,
+					keepFolderStructure,
 				);
 			} else {
 				await this.exportAsFiles(
 					files,
 					targetDir,
-					maintainFolderStructure,
+					keepFolderStructure,
 				);
 			}
 
@@ -45,13 +45,13 @@ export class ExportService {
 	private async exportAsFiles(
 		files: TFile[],
 		targetDir: FileSystemDirectoryHandle,
-		maintainFolderStructure: boolean,
+		keepFolderStructure: boolean,
 	): Promise<void> {
 		for (const file of files) {
 			await this.exportSingleFile(
 				file,
 				targetDir,
-				maintainFolderStructure,
+				keepFolderStructure,
 			);
 		}
 	}
@@ -62,7 +62,7 @@ export class ExportService {
 	private async exportAsZip(
 		files: TFile[],
 		targetDir: FileSystemDirectoryHandle,
-		maintainFolderStructure: boolean,
+		keepFolderStructure: boolean,
 	): Promise<void> {
 		// Dynamically import JSZip to avoid bundling issues
 		const JSZip = (await import("jszip")).default;
@@ -74,7 +74,7 @@ export class ExportService {
 			const processedContent = this.processFileContent(content, file);
 
 			// Create the file path within the ZIP
-			const zipPath = this.getZipFilePath(file, maintainFolderStructure);
+			const zipPath = this.getZipFilePath(file, keepFolderStructure);
 			zip.file(zipPath, processedContent);
 		}
 
@@ -96,7 +96,7 @@ export class ExportService {
 	private async exportSingleFile(
 		file: TFile,
 		targetDir: FileSystemDirectoryHandle,
-		maintainFolderStructure: boolean,
+		keepFolderStructure: boolean,
 	): Promise<void> {
 		const content = await this.app.vault.read(file);
 		const processedContent = this.processFileContent(content, file);
@@ -104,7 +104,7 @@ export class ExportService {
 		// Create the file path within the target directory
 		const targetPath = this.getTargetFilePath(
 			file,
-			maintainFolderStructure,
+			keepFolderStructure,
 		);
 		const targetFileHandle = await this.createNestedFile(
 			targetDir,
@@ -131,9 +131,9 @@ export class ExportService {
 	 */
 	private getTargetFilePath(
 		file: TFile,
-		maintainFolderStructure: boolean,
+		keepFolderStructure: boolean,
 	): string {
-		if (maintainFolderStructure) {
+		if (keepFolderStructure) {
 			// Use the full path structure
 			return file.path;
 		} else {
@@ -147,9 +147,9 @@ export class ExportService {
 	 */
 	private getZipFilePath(
 		file: TFile,
-		maintainFolderStructure: boolean,
+		keepFolderStructure: boolean,
 	): string {
-		if (maintainFolderStructure) {
+		if (keepFolderStructure) {
 			// Use the full path structure within the ZIP
 			return file.path;
 		} else {

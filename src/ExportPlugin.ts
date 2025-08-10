@@ -94,7 +94,7 @@ export default class ExportPlugin extends Plugin {
 				result.selectedFiles,
 				targetDir,
 				result.createZip,
-				result.maintainFolderStructure,
+				result.keepFolderStructure,
 			);
 		} catch (error) {
 			console.error("Export request failed:", error);
@@ -113,7 +113,7 @@ export default class ExportPlugin extends Plugin {
 				this.app,
 				sourceFile,
 				this.settings.zipOutput,
-				this.settings.maintainFolderStructure,
+				this.settings.keepFolderStructure,
 				resolve,
 				this,
 			);
