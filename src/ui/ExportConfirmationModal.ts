@@ -121,6 +121,7 @@ export class ExportConfirmationModal extends Modal {
 		this.createLinkDepthControl(content);
 		this.createIgnoreFoldersSetting(content);
 		this.createIgnoreTagsSetting(content);
+		this.createToggleButtons(content);
 
 		// --- Toggle behavior ---
 		let expanded = false;
@@ -322,6 +323,7 @@ export class ExportConfirmationModal extends Modal {
 		});
 		row.style.display = "flex";
 		row.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
+		row.style.marginTop = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
 		row.style.justifyContent = "space-between";
 		row.style.alignItems = "center";
 
