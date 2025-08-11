@@ -49,7 +49,7 @@ export class ExportConfirmationModal extends Modal {
 
 		this.createHeader();
 		this.createSourceInfo();
-		this.createConfigurationSection();
+		this.createExportSettingsSection();
 		this.createFileList();
 		this.createButtons();
 
@@ -70,7 +70,6 @@ export class ExportConfirmationModal extends Modal {
 			text: "Export Confirmation",
 		});
 		header.style.textAlign = "center";
-		header.style.marginBottom = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
 		header.style.fontSize = UI_CONSTANTS.FONT_SIZES.HEADER;
 	}
 
@@ -80,120 +79,90 @@ export class ExportConfirmationModal extends Modal {
 		});
 		sourceInfo.empty();
 
-		const sourceLabel = sourceInfo.createEl("strong", { text: "Source: " });
+		sourceInfo.createEl("strong", { text: "Source: " });
 		sourceInfo.createEl("span", { text: this.sourceFile.path });
 		sourceInfo.createEl("br");
 
-		const totalLabel = sourceInfo.createEl("strong", {
-			text: "Total files to export: ",
-		});
+		// sourceInfo.createEl("strong", {
+		// 	text: "Total files to export: ",
+		// });
 		sourceInfo.createEl("span", { text: "Loading..." });
 		sourceInfo.style.marginBottom = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
 		sourceInfo.style.padding = UI_CONSTANTS.SPACING.DEFAULT_PADDING;
-		sourceInfo.style.backgroundColor =
-			UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY;
-		sourceInfo.style.borderRadius = "4px";
 		sourceInfo.style.fontSize = UI_CONSTANTS.FONT_SIZES.SOURCE_INFO;
 	}
 
-	private createConfigurationSection() {
-		// Create the trigger checkbox (always visible)
-		const triggerContainer = this.contentEl.createEl("div", {
-			cls: "export-config-trigger-container",
-		});
-		triggerContainer.style.marginBottom =
-			UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
-		triggerContainer.style.display = "flex";
-		triggerContainer.style.alignItems = "center";
-		triggerContainer.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
+	private createExportSettingsSection() {
+		const section = this.contentEl.createEl("div", { cls: "export-settings-section" });
 
-		const configTrigger = triggerContainer.createEl("input", {
-			type: "checkbox",
-		});
-		configTrigger.id = "export-config-trigger";
-		configTrigger.style.margin = "0";
+		// --- Header ---
+		const header = section.createEl("div", { cls: "export-settings-header" });
+		header.addClass("setting-item"); // Use Obsidian's style
+		const heading = header.createEl("div", { cls: "setting-item-name" });
+		heading.style.display = "flex";
+		heading.style.alignItems = "center";
+		heading.style.cursor = "pointer";
+		heading.style.marginBottom = UI_CONSTANTS.SPACING.SMALL_MARGIN;
+		heading.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
 
-		const configTriggerLabel = triggerContainer.createEl("label", {
-			text: "Show export configuration",
-		});
-		configTriggerLabel.htmlFor = "export-config-trigger";
-		configTriggerLabel.style.cursor = "pointer";
+		const icon = heading.createEl("span", { text: "▸" });
+		icon.style.marginRight = "6px";
+		icon.style.transition = "transform 0.2s ease";
 
-		// The actual configuration section (hidden by default)
-		const configContainer = this.contentEl.createEl("div", {
-			cls: "export-config-section",
-		});
-		configContainer.style.display = "none";
-		configContainer.style.marginBottom =
-			UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
-		configContainer.style.padding = "12px";
-		configContainer.style.backgroundColor =
-			UI_CONSTANTS.COLORS.BACKGROUND_SECONDARY;
-		configContainer.style.borderRadius = "4px";
-		configContainer.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
+		heading.createEl("span", { text: "Export settings" });
 
-		const configTitle = configContainer.createEl("h3", {
-			text: "Export Configuration",
-		});
-		configTitle.style.margin = "0 0 15px 0";
-		configTitle.style.fontSize = UI_CONSTANTS.FONT_SIZES.CONFIG_TITLE;
-		configTitle.style.textAlign = "center";
+		// --- Content ---
+		const content = section.createEl("div", { cls: "export-settings-content" });
+		content.style.display = "none";
+		content.style.marginLeft = "20px";
+		content.style.marginRight = "20px";
+		content.style.marginBottom = "10px";
 
-		this.createLinkDepthControl(configContainer);
-		this.createIgnoreSettings(configContainer);
+		this.createLinkDepthControl(content);
+		this.createIgnoreFoldersSetting(content);
+		this.createIgnoreTagsSetting(content);
 
-		// Advanced options section (always visible within config)
-		const advancedOptionsSection = configContainer.createEl("div", {
-			cls: "export-advanced-options-section",
-		});
-		advancedOptionsSection.style.marginTop = "10px";
-		this.createZipToggleAndDirectoryStructureToggleRow(
-			advancedOptionsSection,
-		);
-
-		// Show/hide config section
-		configTrigger.addEventListener("change", () => {
-			configContainer.style.display = configTrigger.checked
-				? "block"
-				: "none";
+		// --- Toggle behavior ---
+		let expanded = false;
+		heading.addEventListener("click", () => {
+			expanded = !expanded;
+			content.style.display = expanded ? "block" : "none";
+			icon.style.transform = expanded ? "rotate(90deg)" : "rotate(0deg)";
 		});
 	}
 
 	private createLinkDepthControl(container: HTMLElement) {
-		const linkDepthContainer = container.createEl("div", {
-			cls: "export-link-depth",
+		const row = container.createEl("div", {
+			cls: "export-link-depth-row",
 		});
-		linkDepthContainer.style.marginBottom = "15px";
-		linkDepthContainer.style.padding = UI_CONSTANTS.SPACING.DEFAULT_PADDING;
-		linkDepthContainer.style.backgroundColor =
-			UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY;
-		linkDepthContainer.style.borderRadius = "4px";
-		linkDepthContainer.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
+		row.style.display = "flex";
+		row.style.alignItems = "center";
+		row.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
+		row.style.marginBottom = "6px";
 
-		const linkDepthLabel = linkDepthContainer.createEl("label", {
-			cls: "export-link-depth-label",
+		// Label column
+		const labelCol = row.createEl("div", {
+			cls: "export-link-depth-label-col",
 		});
-		linkDepthLabel.style.display = "flex";
-		linkDepthLabel.style.alignItems = "center";
-		linkDepthLabel.style.justifyContent = "space-between";
-		linkDepthLabel.style.marginBottom = UI_CONSTANTS.SPACING.SMALL_MARGIN;
-
-		const linkDepthText = linkDepthLabel.createEl("span");
-		linkDepthText.empty();
-		linkDepthText.createEl("strong", { text: "Link depth: " });
-		const depthValue = linkDepthText.createEl("span", {
-			text: this.currentLinkDepth.toString(),
-			attr: { id: "link-depth-value" },
+		labelCol.style.flex = "0 0 120px";
+		labelCol.style.display = "flex";
+		labelCol.style.alignItems = "center";
+		const linkDepthLabel = labelCol.createEl("label", {
+			text: "Link depth:",
 		});
+		linkDepthLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
+		linkDepthLabel.style.marginBottom = "0";
 
-		const linkDepthSliderContainer = linkDepthContainer.createEl("div", {
+		// Input + value column
+		const inputCol = row.createEl("div", {
 			cls: "export-link-depth-slider",
 		});
-		linkDepthSliderContainer.style.display = "flex";
-		linkDepthSliderContainer.style.alignItems = "center";
-		linkDepthSliderContainer.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
+		inputCol.style.flex = "1";
+		inputCol.style.display = "flex";
+		inputCol.style.alignItems = "center";
 
-		this.linkDepthSlider = linkDepthSliderContainer.createEl("input", {
+		// Slider
+		this.linkDepthSlider = inputCol.createEl("input", {
 			type: "range",
 		});
 		this.linkDepthSlider.min = "0";
@@ -201,49 +170,35 @@ export class ExportConfirmationModal extends Modal {
 		this.linkDepthSlider.step = "1";
 		this.linkDepthSlider.value = this.currentLinkDepth.toString();
 		this.linkDepthSlider.style.flex = "1";
+		this.linkDepthSlider.style.height = "4px";
+		this.linkDepthSlider.style.marginRight = "8px";
+		this.linkDepthSlider.style.verticalAlign = "middle"; 
 
-		const linkDepthValue = linkDepthSliderContainer.createEl("span", {
+		// Value display
+		const linkDepthValue = inputCol.createEl("span", {
 			cls: "export-link-depth-value",
 		});
 		linkDepthValue.textContent = this.currentLinkDepth.toString();
+		linkDepthValue.style.fontSize = "0.8em";
+		linkDepthValue.style.marginLeft = "6px";
+		linkDepthValue.style.color = "var(--text-muted)";
+		linkDepthValue.style.display = "inline-block";
 		linkDepthValue.style.minWidth = "20px";
-		linkDepthValue.style.textAlign = "center";
+		linkDepthValue.style.textAlign = "right";
+		linkDepthValue.style.verticalAlign = "middle"; // aligns with slider thumb
 
-		// Update link depth value display and recalculate files
+		// Update on slider change
 		this.linkDepthSlider.oninput = async (e) => {
 			const newDepth = parseInt((e.target as HTMLInputElement).value);
 			linkDepthValue.textContent = newDepth.toString();
-			const depthValueElement =
-				document.getElementById("link-depth-value");
-			if (depthValueElement)
-				depthValueElement.textContent = newDepth.toString();
+			const depthValueElement = document.getElementById("link-depth-value");
+			if (depthValueElement) depthValueElement.textContent = newDepth.toString();
 
 			if (newDepth !== this.currentLinkDepth) {
 				this.currentLinkDepth = newDepth;
 				await this.recalculateFiles();
 			}
 		};
-	}
-
-	private createIgnoreSettings(container: HTMLElement) {
-		const ignoreContainer = container.createEl("div", {
-			cls: "export-ignore-settings",
-		});
-		ignoreContainer.style.marginBottom = "0";
-		ignoreContainer.style.padding = UI_CONSTANTS.SPACING.DEFAULT_PADDING;
-		ignoreContainer.style.backgroundColor =
-			UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY;
-		ignoreContainer.style.borderRadius = "4px";
-		ignoreContainer.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
-
-		const ignoreTitle = ignoreContainer.createEl("h4", {
-			text: "One-time Ignore Settings",
-		});
-		ignoreTitle.style.margin = "0 0 12px 0";
-		ignoreTitle.style.fontSize = UI_CONSTANTS.FONT_SIZES.IGNORE_TITLE;
-
-		this.createIgnoreFoldersSetting(ignoreContainer);
-		this.createIgnoreTagsSetting(ignoreContainer);
 	}
 
 	private createIgnoreFoldersSetting(container: HTMLElement) {
@@ -262,7 +217,7 @@ export class ExportConfirmationModal extends Modal {
 		labelCol.style.display = "flex";
 		labelCol.style.alignItems = "center";
 		const ignoreFoldersLabel = labelCol.createEl("label", {
-			text: "Ignore folder paths:",
+			text: "Ignore folder:",
 		});
 		ignoreFoldersLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
 		ignoreFoldersLabel.style.marginBottom = "0";
@@ -338,7 +293,7 @@ export class ExportConfirmationModal extends Modal {
 		fileListContainer.style.maxHeight =
 			UI_CONSTANTS.MODAL.MAX_FILE_LIST_HEIGHT;
 		fileListContainer.style.overflowY = "auto";
-		fileListContainer.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
+		// fileListContainer.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
 		fileListContainer.style.borderRadius = "4px";
 		fileListContainer.style.padding = UI_CONSTANTS.SPACING.DEFAULT_PADDING;
 		fileListContainer.style.marginBottom =
@@ -348,7 +303,7 @@ export class ExportConfirmationModal extends Modal {
 			cls: "export-file-list-header",
 		});
 		fileListHeader.empty();
-		fileListHeader.createEl("strong", { text: "Files to be exported:" });
+		fileListHeader.createEl("strong", { text: "Files:" });
 		fileListHeader.style.marginBottom = UI_CONSTANTS.SPACING.SMALL_MARGIN;
 		fileListHeader.style.borderBottom = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
 		fileListHeader.style.paddingBottom = UI_CONSTANTS.SPACING.SMALL_PADDING;
@@ -359,7 +314,7 @@ export class ExportConfirmationModal extends Modal {
 		this.renderFileList(fileList);
 	}
 
-	private createZipToggleAndDirectoryStructureToggleRow(
+	private createToggleButtons(
 		container: HTMLElement,
 	) {
 		const row = container.createEl("div", {
@@ -503,7 +458,25 @@ export class ExportConfirmationModal extends Modal {
 		// Add filtered files (if any)
 		if (this.filteredFiles.size > 0) {
 			this.addFilteredFilesSeparator(fileList, sortedFiles.length > 0);
-			this.renderFilteredFiles(fileList);
+			// this.renderFilteredFiles(fileList);
+
+			const sortedFilteredFiles = FileUtils.sortFiles(
+				Array.from(this.filteredFiles.values()).map((f) => f.file),
+			);
+
+			sortedFilteredFiles.forEach((file, index) => {
+				const filteredItem = this.filteredFiles.get(file.path);
+				if (filteredItem) {
+					this.createFileItem(
+						fileList,
+						file,
+						index,
+						sortedFilteredFiles.length,
+						true,
+					);
+				}
+			});
+
 		}
 
 		this.updateSourceInfo();
@@ -520,10 +493,6 @@ export class ExportConfirmationModal extends Modal {
 			cls: `export-file-item${isFiltered ? " filtered" : ""}`,
 		});
 		fileItem.style.padding = UI_CONSTANTS.SPACING.SMALL_PADDING + " 0";
-		fileItem.style.borderBottom =
-			index < totalFiles - 1
-				? `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER_HOVER}`
-				: "none";
 		fileItem.style.display = "flex";
 		fileItem.style.alignItems = "flex-start";
 		fileItem.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
@@ -598,6 +567,7 @@ export class ExportConfirmationModal extends Modal {
 			});
 		}
 
+
 		// Add leftHeader and tagsContainer to fileHeader
 		fileHeader.appendChild(leftHeader);
 		fileHeader.appendChild(tagsContainer);
@@ -608,7 +578,21 @@ export class ExportConfirmationModal extends Modal {
 		filePath.textContent = file.path;
 		filePath.style.fontSize = UI_CONSTANTS.FONT_SIZES.FILE_PATH;
 		filePath.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
-		filePath.style.marginLeft = "20px";
+		filePath.style.marginLeft = "25px";
+
+		// Add filter reason
+		if (isFiltered) {
+			const filterReason = fileContent.createEl("div", {
+				cls: "export-file-filter-reason",
+			});
+			const reason = this.filteredFiles.get(file.path)?.reason;
+			filterReason.textContent = `${reason}`;
+			filterReason.style.fontSize = UI_CONSTANTS.FONT_SIZES.FILTER_REASON;
+			filterReason.style.color = UI_CONSTANTS.COLORS.TEXT_ERROR;
+			filterReason.style.marginLeft = "20px";
+			filterReason.style.marginTop = "2px";
+			filterReason.style.fontStyle = "italic";
+		}
 	}
 
 	private addFilteredFilesSeparator(
@@ -623,131 +607,10 @@ export class ExportConfirmationModal extends Modal {
 			separator.style.margin = UI_CONSTANTS.SPACING.SMALL_MARGIN + " 0";
 			separator.style.padding = UI_CONSTANTS.SPACING.SMALL_MARGIN + " 0";
 			const em = document.createElement("em");
-			em.textContent = "Filtered out files (not exportable):";
+			em.textContent = "Filtered files:";
 			separator.appendChild(em);
 			separator.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
 			separator.style.fontSize = UI_CONSTANTS.FONT_SIZES.IGNORE_TITLE;
-		}
-	}
-
-	private renderFilteredFiles(container: HTMLElement) {
-		const sortedFilteredFiles = FileUtils.sortFiles(
-			Array.from(this.filteredFiles.values()).map((f) => f.file),
-		);
-
-		sortedFilteredFiles.forEach((file, index) => {
-			const filteredItem = this.filteredFiles.get(file.path);
-			if (filteredItem) {
-				this.createFilteredFileItem(
-					container,
-					filteredItem,
-					index,
-					sortedFilteredFiles.length,
-				);
-			}
-		});
-	}
-
-	private createFilteredFileItem(
-		container: HTMLElement,
-		filteredItem: FilteredFile,
-		index: number,
-		totalFiles: number,
-	) {
-		const fileItem = container.createEl("div", {
-			cls: "export-file-item filtered",
-		});
-		fileItem.style.padding = UI_CONSTANTS.SPACING.SMALL_PADDING + " 0";
-		fileItem.style.borderBottom =
-			index < totalFiles - 1
-				? `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER_HOVER}`
-				: "none";
-		fileItem.style.display = "flex";
-		fileItem.style.alignItems = "flex-start";
-		fileItem.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		fileItem.style.minHeight = UI_CONSTANTS.MODAL.FILE_ITEM_MIN_HEIGHT;
-		fileItem.style.opacity = "0.6";
-
-		// Create disabled checkbox
-		const checkbox = fileItem.createEl("input", { type: "checkbox" });
-		checkbox.checked = false;
-		checkbox.disabled = true;
-		checkbox.style.margin = "0";
-		checkbox.style.marginTop = "2px";
-
-		const fileContent = fileItem.createEl("div", {
-			cls: "export-file-content",
-		});
-		fileContent.style.flex = "1";
-		fileContent.style.display = "flex";
-		fileContent.style.flexDirection = "column";
-		fileContent.style.justifyContent = "space-between";
-		fileContent.style.minHeight =
-			UI_CONSTANTS.MODAL.FILE_CONTENT_MIN_HEIGHT;
-
-		const fileHeader = fileContent.createEl("div", {
-			cls: "export-file-header",
-		});
-		fileHeader.style.display = "flex";
-		fileHeader.style.alignItems = "center";
-		fileHeader.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-
-		const icon = fileHeader.createEl("span", { cls: "export-file-icon" });
-		icon.textContent = filteredItem.file.extension === "md" ? "📄" : "📄";
-
-		const fileName = fileHeader.createEl("span", {
-			cls: "export-file-name",
-		});
-		fileName.textContent = filteredItem.file.name;
-		fileName.style.fontFamily = "monospace";
-
-		const filePath = fileContent.createEl("div", {
-			cls: "export-file-path",
-		});
-		filePath.textContent = filteredItem.file.path;
-		filePath.style.fontSize = UI_CONSTANTS.FONT_SIZES.FILE_PATH;
-		filePath.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
-		filePath.style.marginLeft = "20px";
-
-		// Add filter reason
-		const filterReason = fileContent.createEl("div", {
-			cls: "export-file-filter-reason",
-		});
-		filterReason.textContent = `🚫 ${filteredItem.reason}`;
-		filterReason.style.fontSize = UI_CONSTANTS.FONT_SIZES.FILTER_REASON;
-		filterReason.style.color = UI_CONSTANTS.COLORS.TEXT_ERROR;
-		filterReason.style.marginLeft = "20px";
-		filterReason.style.marginTop = "2px";
-		filterReason.style.fontStyle = "italic";
-
-		// Add tags display - always create container for consistent spacing
-		const tagsContainer = fileContent.createEl("div", {
-			cls: "export-file-tags",
-		});
-		tagsContainer.style.marginLeft = "20px";
-		tagsContainer.style.minHeight =
-			UI_CONSTANTS.MODAL.TAGS_CONTAINER_MIN_HEIGHT;
-		tagsContainer.style.display = "flex";
-		tagsContainer.style.flexWrap = "wrap";
-		tagsContainer.style.alignItems = "center";
-
-		const tags = FileUtils.getFileTags(filteredItem.file, this.plugin.app);
-		if (tags.length > 0) {
-			tags.forEach((tag) => {
-				const tagElement = tagsContainer.createEl("span", {
-					cls: "export-file-tag",
-				});
-				tagElement.textContent = tag;
-				tagElement.style.display = "inline-block";
-				tagElement.style.backgroundColor =
-					UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER;
-				tagElement.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
-				tagElement.style.padding = "1px 4px";
-				tagElement.style.margin = "0 2px 2px 0";
-				tagElement.style.borderRadius = "8px";
-				tagElement.style.fontSize = UI_CONSTANTS.FONT_SIZES.TAGS;
-				tagElement.style.fontFamily = "monospace";
-			});
 		}
 	}
 
@@ -774,16 +637,12 @@ export class ExportConfirmationModal extends Modal {
 			statsLine.style.marginTop = "4px";
 
 			const filesExport = document.createElement("span");
-			filesExport.innerHTML = `<strong>Files to export:</strong> ${this.filesToExport.size}`;
+			filesExport.innerHTML = `<strong>Files:</strong> ${this.filesToExport.size}`;
 			statsLine.appendChild(filesExport);
 
 			const filtered = document.createElement("span");
-			filtered.innerHTML = `<strong>Filtered out:</strong> ${this.filteredFiles.size}`;
+			filtered.innerHTML = `<strong>Filtered:</strong> ${this.filteredFiles.size}`;
 			statsLine.appendChild(filtered);
-
-			const total = document.createElement("span");
-			total.innerHTML = `<strong>Total:</strong> ${totalFiles}`;
-			statsLine.appendChild(total);
 
 			sourceInfo.appendChild(statsLine);
 		}

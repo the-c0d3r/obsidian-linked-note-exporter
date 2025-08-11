@@ -17,13 +17,11 @@ export class ExportSettingsTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		// Settings section - no heading needed as per Obsidian guidelines
-
 		// Link Depth Setting
 		new Setting(containerEl)
 			.setName("Default Link Depth")
 			.setDesc(
-				"How many levels of linked files to include in exports. 0 = just the source file, 1 = source + directly linked files, etc.",
+				"How many levels of linked files to include in exports. 0 = only source file, 1 = source + directly linked files, etc.",
 			)
 			.addSlider((slider) =>
 				slider
