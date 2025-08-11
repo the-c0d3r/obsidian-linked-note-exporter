@@ -1,6 +1,6 @@
 # Linked Note Exporter
 
-Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault.
+Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault so you can share it with others.
 
 ## ✨ Features
 
@@ -37,9 +37,9 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 
 -   If enabled, the exported files will be zipped into `export.zip` inside the target directory.
 
-### `Maintain Folder Structure`
+### `Keep Folder Structure`
 
--   If enabled, the export files or zip will maintain the same directory structure as the original file path
+-   If enabled, the export files or zip will maintain the same directory structure as the original file path.
 
 ### `Ignore Folders`
 
