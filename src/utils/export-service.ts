@@ -99,7 +99,7 @@ export class ExportService {
 		keepFolderStructure: boolean,
 	): Promise<void> {
 
-		let processedContent: string | Uint8Array<ArrayBufferLike>;
+		let processedContent;
 		if (file.extension === "md") {
 			const content = await this.app.vault.read(file);
 			processedContent = this.processFileContent(content, file);
