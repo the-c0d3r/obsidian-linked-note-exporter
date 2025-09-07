@@ -70,8 +70,13 @@ export class ExportService {
 
 		// Add all files to the ZIP
 		for (const file of files) {
-			const content = await this.app.vault.read(file);
-			const processedContent = this.processFileContent(content, file);
+			let processedContent;
+			if (file.extension === "md") {
+				const content = await this.app.vault.read(file);
+				processedContent = this.processFileContent(content, file);
+			} else {
+				processedContent = await this.app.vault.readBinary(file);
+			}
 
 			// Create the file path within the ZIP
 			const zipPath = this.getZipFilePath(file, keepFolderStructure);
