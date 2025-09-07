@@ -98,8 +98,14 @@ export class ExportService {
 		targetDir: FileSystemDirectoryHandle,
 		keepFolderStructure: boolean,
 	): Promise<void> {
-		const content = await this.app.vault.read(file);
-		const processedContent = this.processFileContent(content, file);
+
+		let processedContent: string | Uint8Array<ArrayBufferLike>;
+		if (file.extension === "md") {
+			const content = await this.app.vault.read(file);
+			processedContent = this.processFileContent(content, file);
+		} else {
+			processedContent = await this.app.vault.readBinary(file);
+		}
 
 		// Create the file path within the target directory
 		const targetPath = this.getTargetFilePath(
