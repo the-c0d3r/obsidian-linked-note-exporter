@@ -11,8 +11,17 @@ export class FileUtils {
 		const embeds = content.match(/!\[\[([^\]]+?)\]\]/g) || [];
 
 		[...mdLinks, ...embeds].forEach((link) => {
-			const clean = link.replace(/!\[\[|\[\[|\]\]/g, "").split("|")[0];
-			links.add(clean);
+			const clean = link.replace(/!\[\[|\[\[|\]\]/g, "");
+			// For PDF files with fragment identifiers, extract only the filename before #
+			if (clean.toLowerCase().includes(".pdf") && clean.includes("#")) {
+				// Extract filename before the # symbol
+				const fileName = clean.split("#")[0];
+				links.add(fileName);
+			} else {
+				// Regular case - no fragment or not PDF
+				const fileName = clean.split("|")[0];
+				links.add(fileName);
+			}
 		});
 
 		return Array.from(links);
