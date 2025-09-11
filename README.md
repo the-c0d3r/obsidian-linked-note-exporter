@@ -16,6 +16,7 @@ Export a note along with all its attachments and linked notes—cleanly, conveni
 You’ve crafted a beautiful note with images and cross-links—but sharing it with a colleague becomes a tangled mess of missing files and broken links. This plugin solves that elegantly by exporting a self-contained bundle of everything related to that note.
 
 ## 🖼️ Screenshots
+![demo](assets/demo.gif)
 
 ![Configuration options](assets/config.png)
 
