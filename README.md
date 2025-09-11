@@ -18,13 +18,10 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 ## 🖼️ Screenshots
 ![demo](assets/demo.gif)
 
+![Export Modal](assets/export-modal.png)
+
 ![Configuration options](assets/config.png)
 
-![Command Palette](assets/command-palette.png)
-
-![File Menu](assets/file-menu.png)
-
-![Export Modal](assets/export-modal.png)
 
 ## ⚙️ Settings
 
