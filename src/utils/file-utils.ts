@@ -28,20 +28,6 @@ export class FileUtils {
 	}
 
 	/**
-	 * Rewrite markdown links to ensure they have .md extension
-	 */
-	static rewriteLinks(content: string): string {
-		return content.replace(
-			/\[\[([^\]]+?)(\|.*?)?\]\]/g,
-			(match, path, alias) => {
-				let name = path;
-				if (!name.endsWith(".md")) name += ".md";
-				return `[[${name}${alias || ""}]]`;
-			},
-		);
-	}
-
-	/**
 	 * Check if a tag matches an ignore pattern
 	 */
 	static matchesIgnore(tag: string, ignoreList: string[]): boolean {

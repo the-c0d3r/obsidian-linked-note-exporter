@@ -131,9 +131,6 @@ export class ExportService {
 	 * Process file content (e.g., rewrite links for markdown files)
 	 */
 	private processFileContent(content: string, file: TFile): string {
-		if (file.extension === "md") {
-			return FileUtils.rewriteLinks(content);
-		}
 		return content;
 	}
 
