@@ -10,20 +10,24 @@ export class ExportConfirmationModal extends Modal {
 	private filteredFiles: Map<string, FilteredFile>;
 	private zipToggle: HTMLInputElement;
 	private keepFolderStructureToggle: HTMLInputElement;
+	private useHeaderHierarchyToggle: HTMLInputElement;
 	private defaultZipSetting: boolean;
 	private defaultkeepFolderStructureSetting: boolean;
+	private defaultUseHeaderHierarchy: boolean;
 	private fileCheckboxes: Map<string, HTMLInputElement>;
 	private linkDepthSlider: HTMLInputElement;
 	private currentLinkDepth: number;
 	private ignoreFoldersInput: HTMLInputElement;
 	private ignoreTagsInput: HTMLInputElement;
 	private plugin: any;
+	private headerMap: Map<string, string[][]>;
 
 	constructor(
 		app: App,
 		sourceFile: TFile,
 		defaultZipSetting: boolean,
 		defaultkeepFolderStructureSetting: boolean,
+		defaultUseHeaderHierarchy: boolean,
 		resolve: (value: ExportModalResult) => void,
 		plugin: any,
 	) {
@@ -32,12 +36,21 @@ export class ExportConfirmationModal extends Modal {
 		this.filesToExport = new Map();
 		this.filteredFiles = new Map();
 		this.defaultZipSetting = defaultZipSetting;
-		this.defaultkeepFolderStructureSetting =
-			defaultkeepFolderStructureSetting;
+
+		// Handle mutual exclusivity: if both are true, give precedence to header hierarchy
+		if (defaultkeepFolderStructureSetting && defaultUseHeaderHierarchy) {
+			this.defaultkeepFolderStructureSetting = false;
+			this.defaultUseHeaderHierarchy = true;
+		} else {
+			this.defaultkeepFolderStructureSetting = defaultkeepFolderStructureSetting;
+			this.defaultUseHeaderHierarchy = defaultUseHeaderHierarchy;
+		}
+
 		this.resolve = resolve;
 		this.plugin = plugin;
 		this.currentLinkDepth = plugin.settings.linkDepth;
 		this.fileCheckboxes = new Map();
+		this.headerMap = new Map();
 	}
 
 	async onOpen() {
@@ -322,13 +335,19 @@ export class ExportConfirmationModal extends Modal {
 			cls: "export-advanced-options-row",
 		});
 		row.style.display = "flex";
-		row.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
+		row.style.flexDirection = "column";
+		row.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
 		row.style.marginTop = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
-		row.style.justifyContent = "space-between";
-		row.style.alignItems = "center";
+
+		// First row: ZIP and Keep folder structure
+		const firstRow = row.createEl("div");
+		firstRow.style.display = "flex";
+		firstRow.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
+		firstRow.style.justifyContent = "space-between";
+		firstRow.style.alignItems = "center";
 
 		// ZIP toggle (left column)
-		const zipCol = row.createEl("div", { cls: "export-zip-toggle-col" });
+		const zipCol = firstRow.createEl("div", { cls: "export-zip-toggle-col" });
 		zipCol.style.flex = "1";
 		zipCol.style.display = "flex";
 		zipCol.style.alignItems = "center";
@@ -347,7 +366,7 @@ export class ExportConfirmationModal extends Modal {
 		zipToggleText.createEl("strong", { text: "Create ZIP archive" });
 
 		// Directory structure toggle (right column)
-		const dirCol = row.createEl("div", {
+		const dirCol = firstRow.createEl("div", {
 			cls: "export-directory-toggle-col",
 		});
 		dirCol.style.flex = "1";
@@ -369,6 +388,60 @@ export class ExportConfirmationModal extends Modal {
 		this.keepFolderStructureToggle.style.margin = "0";
 		const dirToggleText = dirLabel.createEl("span");
 		dirToggleText.createEl("strong", { text: "Keep folder structure" });
+
+		// Mutual exclusivity: when Keep folder structure is checked, uncheck Use header hierarchy
+		this.keepFolderStructureToggle.addEventListener("change", () => {
+			if (this.keepFolderStructureToggle.checked && this.useHeaderHierarchyToggle) {
+				this.useHeaderHierarchyToggle.checked = false;
+				// Clear header map since it's no longer needed
+				this.headerMap = new Map();
+			}
+		});
+
+		// Second row: Header hierarchy toggle
+		const secondRow = row.createEl("div");
+		secondRow.style.display = "flex";
+		secondRow.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
+		secondRow.style.alignItems = "center";
+
+		const headerCol = secondRow.createEl("div", {
+			cls: "export-header-hierarchy-toggle-col",
+		});
+		headerCol.style.flex = "1";
+		headerCol.style.display = "flex";
+		headerCol.style.alignItems = "center";
+		const headerLabel = headerCol.createEl("label", {
+			cls: "export-header-hierarchy-toggle-label",
+		});
+		headerLabel.style.display = "flex";
+		headerLabel.style.alignItems = "center";
+		headerLabel.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
+		headerLabel.style.cursor = "pointer";
+		headerLabel.title =
+			"Organize exported files by the header structure in the source note";
+		this.useHeaderHierarchyToggle = headerLabel.createEl("input", {
+			type: "checkbox",
+		});
+		this.useHeaderHierarchyToggle.checked = this.defaultUseHeaderHierarchy;
+		this.useHeaderHierarchyToggle.style.margin = "0";
+		const headerToggleText = headerLabel.createEl("span");
+		headerToggleText.createEl("strong", { text: "Use header hierarchy" });
+
+		// Rebuild header map when toggle changes
+		this.useHeaderHierarchyToggle.addEventListener("change", async () => {
+			if (this.useHeaderHierarchyToggle.checked) {
+				// Mutual exclusivity: uncheck Keep folder structure
+				this.keepFolderStructureToggle.checked = false;
+
+				// Build header map
+				this.headerMap = await FileUtils.buildHeaderHierarchyAsync(
+					this.sourceFile,
+					this.plugin.app,
+				);
+			} else {
+				this.headerMap = new Map();
+			}
+		});
 	}
 
 	private createButtons() {
@@ -396,6 +469,8 @@ export class ExportConfirmationModal extends Modal {
 				createZip: false,
 				keepFolderStructure:
 					this.keepFolderStructureToggle.checked,
+				useHeaderHierarchy: false,
+				headerMap: new Map(),
 				selectedFiles: [],
 				linkDepth: this.currentLinkDepth,
 				ignoreFolders: this.ignoreFoldersInput.value
@@ -427,6 +502,8 @@ export class ExportConfirmationModal extends Modal {
 				createZip: this.zipToggle.checked,
 				keepFolderStructure:
 					this.keepFolderStructureToggle.checked,
+				useHeaderHierarchy: this.useHeaderHierarchyToggle.checked,
+				headerMap: this.headerMap,
 				selectedFiles,
 				linkDepth: this.currentLinkDepth,
 				ignoreFolders: this.ignoreFoldersInput.value
@@ -728,6 +805,21 @@ export class ExportConfirmationModal extends Modal {
 
 		// Update the filesToExport map
 		this.filesToExport = allFilesToCopy;
+
+		// Build header hierarchy map if the feature might be used
+		// Check toggle if it exists, otherwise check default setting
+		const shouldBuildMap = this.useHeaderHierarchyToggle
+			? this.useHeaderHierarchyToggle.checked
+			: this.defaultUseHeaderHierarchy;
+
+		if (shouldBuildMap) {
+			this.headerMap = await FileUtils.buildHeaderHierarchyAsync(
+				this.sourceFile,
+				this.plugin.app,
+			);
+		} else {
+			this.headerMap = new Map();
+		}
 
 		// Refresh the file list display
 		this.refreshFileList();
