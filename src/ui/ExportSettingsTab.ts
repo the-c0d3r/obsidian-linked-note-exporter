@@ -53,14 +53,39 @@ export class ExportSettingsTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Default Keep Folder Structure")
 			.setDesc(
-				"Whether to keep folder structure by default when exporting files (ZIP and regular exports)",
+				"Whether to keep folder structure by default when exporting files (ZIP and regular exports). Note: This is mutually exclusive with 'Use Header Hierarchy'.",
 			)
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.keepFolderStructure)
 					.onChange(async (value) => {
 						this.plugin.settings.keepFolderStructure = value;
+						// Mutual exclusivity: if this is enabled, disable header hierarchy
+						if (value) {
+							this.plugin.settings.useHeaderHierarchy = false;
+						}
 						await this.plugin.saveSettings();
+						this.display(); // Refresh to show updated toggle states
+					}),
+			);
+
+		// Use Header Hierarchy Setting
+		new Setting(containerEl)
+			.setName("Default Use Header Hierarchy")
+			.setDesc(
+				"Organize exported files according to header structure in the source note. Headers become directories, and linked notes are placed under their respective header sections. Note: This is mutually exclusive with 'Keep Folder Structure'.",
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.useHeaderHierarchy)
+					.onChange(async (value) => {
+						this.plugin.settings.useHeaderHierarchy = value;
+						// Mutual exclusivity: if this is enabled, disable keep folder structure
+						if (value) {
+							this.plugin.settings.keepFolderStructure = false;
+						}
+						await this.plugin.saveSettings();
+						this.display(); // Refresh to show updated toggle states
 					}),
 			);
 
