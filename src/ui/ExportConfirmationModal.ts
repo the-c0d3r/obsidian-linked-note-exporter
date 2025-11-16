@@ -21,6 +21,8 @@ export class ExportConfirmationModal extends Modal {
 	private ignoreTagsInput: HTMLInputElement;
 	private plugin: any;
 	private headerMap: Map<string, string[][]>;
+	private parentMap: Map<string, Set<string>>;
+	private depthMap: Map<string, number>;
 
 	constructor(
 		app: App,
@@ -51,6 +53,8 @@ export class ExportConfirmationModal extends Modal {
 		this.currentLinkDepth = plugin.settings.linkDepth;
 		this.fileCheckboxes = new Map();
 		this.headerMap = new Map();
+		this.parentMap = new Map();
+		this.depthMap = new Map();
 	}
 
 	async onOpen() {
@@ -437,6 +441,9 @@ export class ExportConfirmationModal extends Modal {
 				this.headerMap = await FileUtils.buildHeaderHierarchyAsync(
 					this.sourceFile,
 					this.plugin.app,
+					Array.from(this.filesToExport.values()),
+					this.parentMap,
+					this.depthMap,
 				);
 			} else {
 				this.headerMap = new Map();
@@ -762,11 +769,25 @@ export class ExportConfirmationModal extends Modal {
 		// Recalculate files with new link depth
 		const allFilesToCopy = new Map<string, TFile>();
 		const visited = new Set<string>();
+		// Track parent-child relationships for header hierarchy inheritance
+		const parentMap = new Map<string, Set<string>>();
+		const depthMap = new Map<string, number>();
 
-		const processFile = async (f: TFile, level = 0) => {
+		const processFile = async (f: TFile, level = 0, parentPath?: string) => {
 			if (visited.has(f.path) || level > this.currentLinkDepth) return;
 
 			visited.add(f.path);
+
+			// Track parent-child relationship for header hierarchy inheritance
+			if (parentPath && level > 0) {
+				if (!parentMap.has(f.path)) {
+					parentMap.set(f.path, new Set());
+				}
+				parentMap.get(f.path)!.add(parentPath);
+			}
+
+			// Track depth for this file
+			depthMap.set(f.path, level);
 
 			// Check if file should be excluded with current ignore settings
 			const shouldExclude = FileUtils.shouldExcludeFile(
@@ -797,7 +818,7 @@ export class ExportConfirmationModal extends Modal {
 						p,
 						f.path,
 					);
-				if (linked) await processFile(linked, level + 1);
+				if (linked) await processFile(linked, level + 1, f.path);
 			}
 		};
 
@@ -805,6 +826,9 @@ export class ExportConfirmationModal extends Modal {
 
 		// Update the filesToExport map
 		this.filesToExport = allFilesToCopy;
+		// Update parent-child and depth tracking maps
+		this.parentMap = parentMap;
+		this.depthMap = depthMap;
 
 		// Build header hierarchy map if the feature might be used
 		// Check toggle if it exists, otherwise check default setting
@@ -816,6 +840,9 @@ export class ExportConfirmationModal extends Modal {
 			this.headerMap = await FileUtils.buildHeaderHierarchyAsync(
 				this.sourceFile,
 				this.plugin.app,
+				Array.from(allFilesToCopy.values()),
+				parentMap,
+				depthMap,
 			);
 		} else {
 			this.headerMap = new Map();
