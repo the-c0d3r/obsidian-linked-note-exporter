@@ -209,6 +209,9 @@ export class FileUtils {
 	static async buildHeaderHierarchyAsync(
 		sourceFile: TFile,
 		app: any,
+		files: TFile[],
+		parentMap: Map<string, Set<string>>,
+		depthMap: Map<string, number>,
 	): Promise<Map<string, string[][]>> {
 		const fileToHeaderPaths = new Map<string, string[][]>();
 
@@ -274,6 +277,41 @@ export class FileUtils {
 				) {
 					existingPaths.push(headerPath);
 				}
+			}
+		}
+
+		// Phase 2: Propagate header context to files at depth > 1
+		// Sort files by depth to ensure parents are processed before children
+		const filesByDepth = files
+			.slice()
+			.sort((a, b) => (depthMap.get(a.path) || 0) - (depthMap.get(b.path) || 0));
+
+		// Process files in depth order to inherit header context from parents
+		for (const file of filesByDepth) {
+			// Skip if already processed (depth 1 files or source file)
+			if (fileToHeaderPaths.has(file.path)) continue;
+
+			// Get this file's parents
+			const parents = parentMap.get(file.path);
+			if (!parents || parents.size === 0) continue;
+
+			// Inherit header paths from all parents
+			const childHeaderPaths: string[][] = [];
+
+			for (const parentPath of parents) {
+				const parentHeaderPaths = fileToHeaderPaths.get(parentPath);
+
+				if (parentHeaderPaths && parentHeaderPaths.length > 0) {
+					// Parent has header context → inherit it
+					childHeaderPaths.push(...parentHeaderPaths);
+				} else {
+					// Parent has no header context → child goes to root
+					childHeaderPaths.push([]);
+				}
+			}
+
+			if (childHeaderPaths.length > 0) {
+				fileToHeaderPaths.set(file.path, childHeaderPaths);
 			}
 		}
 
