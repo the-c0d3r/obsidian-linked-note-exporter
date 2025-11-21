@@ -16,6 +16,9 @@ export class ExportService {
 		targetDir: FileSystemDirectoryHandle,
 		createZip: boolean = false,
 		keepFolderStructure: boolean = false,
+		useHeaderHierarchy: boolean = false,
+		headerMap: Map<string, string[][]> = new Map(),
+		sourceFileName: string = "",
 	): Promise<void> {
 		try {
 			if (createZip) {
@@ -23,12 +26,18 @@ export class ExportService {
 					files,
 					targetDir,
 					keepFolderStructure,
+					useHeaderHierarchy,
+					headerMap,
+					sourceFileName,
 				);
 			} else {
 				await this.exportAsFiles(
 					files,
 					targetDir,
 					keepFolderStructure,
+					useHeaderHierarchy,
+					headerMap,
+					sourceFileName,
 				);
 			}
 
@@ -46,13 +55,47 @@ export class ExportService {
 		files: TFile[],
 		targetDir: FileSystemDirectoryHandle,
 		keepFolderStructure: boolean,
+		useHeaderHierarchy: boolean,
+		headerMap: Map<string, string[][]>,
+		sourceFileName: string,
 	): Promise<void> {
-		for (const file of files) {
-			await this.exportSingleFile(
-				file,
-				targetDir,
-				keepFolderStructure,
-			);
+		// If using header hierarchy, files may be exported to multiple locations
+		if (useHeaderHierarchy) {
+			const exportedPaths = new Set<string>(); // Track to avoid duplicate writes
+
+			for (const file of files) {
+				const exportPaths = FileUtils.getExportPathsForFile(
+					file,
+					headerMap,
+					true, // includeSourceName
+					sourceFileName,
+				);
+
+				for (const exportPath of exportPaths) {
+					// Avoid writing same file to same path twice
+					if (!exportedPaths.has(exportPath)) {
+						exportedPaths.add(exportPath);
+						await this.exportSingleFile(
+							file,
+							targetDir,
+							keepFolderStructure,
+							useHeaderHierarchy,
+							exportPath,
+						);
+					}
+				}
+			}
+		} else {
+			// Original behavior
+			for (const file of files) {
+				await this.exportSingleFile(
+					file,
+					targetDir,
+					keepFolderStructure,
+					useHeaderHierarchy,
+					"",
+				);
+			}
 		}
 	}
 
@@ -63,10 +106,16 @@ export class ExportService {
 		files: TFile[],
 		targetDir: FileSystemDirectoryHandle,
 		keepFolderStructure: boolean,
+		useHeaderHierarchy: boolean,
+		headerMap: Map<string, string[][]>,
+		sourceFileName: string,
 	): Promise<void> {
 		// Dynamically import JSZip to avoid bundling issues
 		const JSZip = (await import("jszip")).default;
 		const zip = new JSZip();
+
+		// Track exported paths to avoid duplicates
+		const exportedPaths = new Set<string>();
 
 		// Add all files to the ZIP
 		for (const file of files) {
@@ -78,9 +127,28 @@ export class ExportService {
 				processedContent = await this.app.vault.readBinary(file);
 			}
 
-			// Create the file path within the ZIP
-			const zipPath = this.getZipFilePath(file, keepFolderStructure);
-			zip.file(zipPath, processedContent);
+			// Get the file path(s) within the ZIP
+			if (useHeaderHierarchy) {
+				const exportPaths = FileUtils.getExportPathsForFile(
+					file,
+					headerMap,
+					true,
+					sourceFileName,
+				);
+
+				for (const zipPath of exportPaths) {
+					if (!exportedPaths.has(zipPath)) {
+						exportedPaths.add(zipPath);
+						zip.file(zipPath, processedContent);
+					}
+				}
+			} else {
+				const zipPath = this.getZipFilePath(
+					file,
+					keepFolderStructure,
+				);
+				zip.file(zipPath, processedContent);
+			}
 		}
 
 		// Generate ZIP content
@@ -102,6 +170,8 @@ export class ExportService {
 		file: TFile,
 		targetDir: FileSystemDirectoryHandle,
 		keepFolderStructure: boolean,
+		useHeaderHierarchy: boolean,
+		headerHierarchyPath: string = "",
 	): Promise<void> {
 
 		let processedContent;
@@ -113,10 +183,10 @@ export class ExportService {
 		}
 
 		// Create the file path within the target directory
-		const targetPath = this.getTargetFilePath(
-			file,
-			keepFolderStructure,
-		);
+		const targetPath = useHeaderHierarchy && headerHierarchyPath
+			? headerHierarchyPath
+			: this.getTargetFilePath(file, keepFolderStructure);
+
 		const targetFileHandle = await this.createNestedFile(
 			targetDir,
 			targetPath,

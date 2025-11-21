@@ -95,6 +95,9 @@ export default class ExportPlugin extends Plugin {
 				targetDir,
 				result.createZip,
 				result.keepFolderStructure,
+				result.useHeaderHierarchy,
+				result.headerMap,
+				sourceFile.basename,
 			);
 		} catch (error) {
 			console.error("Export request failed:", error);
@@ -114,6 +117,7 @@ export default class ExportPlugin extends Plugin {
 				sourceFile,
 				this.settings.zipOutput,
 				this.settings.keepFolderStructure,
+				this.settings.useHeaderHierarchy,
 				resolve,
 				this,
 			);

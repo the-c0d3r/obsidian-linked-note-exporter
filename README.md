@@ -7,6 +7,7 @@ Export a note along with all its attachments and linked notes—cleanly, conveni
 -   Export a note to a directory outside your vault
 -   Include all embedded/linked files (images, PDFs, etc.)
 -   Include notes linked from the source note, up to configurable link depth
+-   Organize exported files by document header structure (H2, H3, etc.)
 -   Optionally zip the export
 -   Exclude notes by folder or tag
 -   Trigger from the **right-click context menu** or **command palette**
@@ -38,6 +39,46 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 ### `Keep Folder Structure`
 
 -   If enabled, the export files or zip will maintain the same directory structure as the original file path.
+-   **Note**: This is mutually exclusive with `Use Header Hierarchy`.
+
+### `Use Header Hierarchy`
+
+-   If enabled, exported files are organized by the header structure of the source note.
+-   Headers (H2, H3, H4, etc.) become directories, and linked notes are placed under their respective header sections.
+-   Creates a clear, semantic folder structure that mirrors your document's outline.
+
+#### Example
+
+**Source Note** (`Project Overview.md`):
+```markdown
+# Project Overview
+
+## Research
+- [[Literature Review]]
+- [[Data Sources]]
+
+## Implementation
+### Backend
+- [[API Design]]
+- [[Database Schema]]
+
+### Frontend
+- [[UI Components]]
+```
+
+**Exported Structure**:
+```
+Project Overview/
+├── Research/
+│   ├── Literature Review.md
+│   └── Data Sources.md
+└── Implementation/
+    ├── Backend/
+    │   ├── API Design.md
+    │   └── Database Schema.md
+    └── Frontend/
+        └── UI Components.md
+```
 
 ### `Ignore Folders`
 
@@ -69,6 +110,16 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it w
 -   All selected notes and attachments will be copied to your chosen directory
 -   Internal links are updated to ensure integrity
 -   Optionally zipped if the setting is enabled
+
+### Export Modes
+
+The plugin offers three ways to organize your exported files:
+
+1. **Flat Export** (default): All files in a single directory
+2. **Vault Structure**: Preserves the original folder hierarchy from your vault
+3. **Header Hierarchy**: Organizes files by the document's header structure (H2, H3, etc.)
+
+Choose the mode that best fits your sharing or archival needs.
 
 ## 📌 Roadmap / TODO
 
