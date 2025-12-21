@@ -15,6 +15,7 @@ export class FileUtils {
 		const standardLinks = Array.from(content.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g));
 		const standardEmbeds = Array.from(content.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
 
+
 		// Process WikiLinks
 		[...mdLinks, ...embeds].forEach((link) => {
 			const clean = link.replace(/!\[\[|\[\[|\]\]/g, "");
@@ -47,6 +48,38 @@ export class FileUtils {
 			}
 		});
 
+		return Array.from(links);
+	}
+
+	/**
+	 * Extract linked file paths from a Canvas file content
+	 */
+	static extractCanvasLinks(content: string): string[] {
+		const links = new Set<string>();
+		try {
+			const canvasData = JSON.parse(content);
+			if (!canvasData.nodes || !Array.isArray(canvasData.nodes)) {
+				return [];
+			}
+
+			// Define interface for minimal node structure
+			interface CanvasNode {
+				type: string;
+				file?: string;
+				text?: string;
+			}
+
+			for (const node of (canvasData.nodes as CanvasNode[])) {
+				if (node.type === 'file' && node.file) {
+					links.add(node.file);
+				} else if (node.type === 'text' && node.text) {
+					const textLinks = this.getLinkedPaths(node.text);
+					textLinks.forEach(link => links.add(link));
+				}
+			}
+		} catch (e) {
+			console.warn("Failed to parse canvas file content", e);
+		}
 		return Array.from(links);
 	}
 

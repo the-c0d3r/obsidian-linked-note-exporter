@@ -34,30 +34,116 @@ describe('FileUtils', () => {
         });
     });
 
-    it('should extract standard markdown links', () => {
-        const content = 'Check [Note 1](Note%201.md) and [Note 2](path/to/Note%202.md)';
-        const result = FileUtils.getLinkedPaths(content);
-        expect(result).toContain('Note 1.md');
-        expect(result).toContain('path/to/Note 2.md');
+    describe('extractCanvasLinks', () => {
+        it('should extract file nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'file', file: 'image.png' },
+                    { type: 'file', file: 'note.md' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toContain('image.png');
+            expect(result).toContain('note.md');
+        });
+
+        it('should extract links from text nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'text', text: 'Check [[wiki-link]] and [md-link](file.md)' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toContain('wiki-link');
+            expect(result).toContain('file.md');
+        });
+
+        it('should handle mixed nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'file', file: 'image.png' },
+                    { type: 'text', text: '[[note]]' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toHaveLength(2);
+            expect(result).toContain('image.png');
+            expect(result).toContain('note');
+        });
+
+        it('should return empty array for invalid json', () => {
+            const result = FileUtils.extractCanvasLinks('invalid json');
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array if no nodes', () => {
+            const result = FileUtils.extractCanvasLinks('{}');
+            expect(result).toEqual([]);
+        });
     });
 
-    it('should extract standard image embeds', () => {
-        const content = '![Image](img.png)';
-        const result = FileUtils.getLinkedPaths(content);
-        expect(result).toContain('img.png');
+
+    describe('extractCanvasLinks', () => {
+        it('should extract file nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'file', file: 'image.png' },
+                    { type: 'file', file: 'note.md' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toContain('image.png');
+            expect(result).toContain('note.md');
+        });
+
+        it('should extract links from text nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'text', text: 'Check [[wiki-link]] and [md-link](file.md)' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toContain('wiki-link');
+            expect(result).toContain('file.md');
+        });
+
+        it('should handle mixed nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'file', file: 'image.png' },
+                    { type: 'text', text: '[[note]]' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toHaveLength(2);
+            expect(result).toContain('image.png');
+            expect(result).toContain('note');
+        });
+
+        it('should return empty array for invalid json', () => {
+            const result = FileUtils.extractCanvasLinks('invalid json');
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array if no nodes', () => {
+            const result = FileUtils.extractCanvasLinks('{}');
+            expect(result).toEqual([]);
+        });
     });
 
-    it('should ignore external links', () => {
-        const content = '[External](https://example.com) and [FTP](ftp://server) and [Custom](ethis://test)';
-        const result = FileUtils.getLinkedPaths(content);
-        expect(result.length).toBe(0);
+    describe('matchesIgnore', () => {
+        it('should match exact tags', () => {
+            expect(FileUtils.matchesIgnore('#private', ['#private'])).toBe(true);
+            expect(FileUtils.matchesIgnore('#public', ['#private'])).toBe(false);
+        });
+
+        it('should match wildcard patterns', () => {
+            expect(FileUtils.matchesIgnore('#personal/journal', ['#personal/*'])).toBe(true);
+            expect(FileUtils.matchesIgnore('#personal', ['#personal/*'])).toBe(true);
+            expect(FileUtils.matchesIgnore('#work/project', ['#personal/*'])).toBe(false);
+        });
     });
 
-    it('should ignore local anchors in markdown links', () => {
-        const content = '[Link](Note.md#header)';
-        const result = FileUtils.getLinkedPaths(content);
-        expect(result).toContain('Note.md');
-    });
 });
 
 describe('matchesIgnore', () => {
@@ -195,6 +281,30 @@ describe('extractLinksFromContent', () => {
         const content = '[Google](https://google.com) and [Custom](ethis://test)';
         const result = FileUtils.extractLinksFromContent(content);
         expect(result).toHaveLength(0);
+    });
+    it('should extract standard markdown links', () => {
+        const content = 'Check [Note 1](Note%201.md) and [Note 2](path/to/Note%202.md)';
+        const result = FileUtils.getLinkedPaths(content);
+        expect(result).toContain('Note 1.md');
+        expect(result).toContain('path/to/Note 2.md');
+    });
+
+    it('should extract standard image embeds', () => {
+        const content = '![Image](img.png)';
+        const result = FileUtils.getLinkedPaths(content);
+        expect(result).toContain('img.png');
+    });
+
+    it('should ignore external links', () => {
+        const content = '[External](https://example.com) and [FTP](ftp://server) and [Custom](ethis://test)';
+        const result = FileUtils.getLinkedPaths(content);
+        expect(result.length).toBe(0);
+    });
+
+    it('should ignore local anchors in markdown links', () => {
+        const content = '[Link](Note.md#header)';
+        const result = FileUtils.getLinkedPaths(content);
+        expect(result).toContain('Note.md');
     });
 });
 

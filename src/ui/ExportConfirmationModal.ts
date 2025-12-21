@@ -190,7 +190,7 @@ export class ExportConfirmationModal extends Modal {
 		this.linkDepthSlider.style.flex = "1";
 		this.linkDepthSlider.style.height = "4px";
 		this.linkDepthSlider.style.marginRight = "8px";
-		this.linkDepthSlider.style.verticalAlign = "middle"; 
+		this.linkDepthSlider.style.verticalAlign = "middle";
 
 		// Value display
 		const linkDepthValue = inputCol.createEl("span", {
@@ -755,15 +755,15 @@ export class ExportConfirmationModal extends Modal {
 		// Get current ignore settings from inputs
 		const ignoreFolders = this.ignoreFoldersInput
 			? this.ignoreFoldersInput.value
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean)
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean)
 			: this.plugin.settings.ignoreFolders;
 		const ignoreTags = this.ignoreTagsInput
 			? this.ignoreTagsInput.value
-					.split(",")
-					.map((s) => s.trim())
-					.filter(Boolean)
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean)
 			: this.plugin.settings.ignoreTags;
 
 		// Recalculate files with new link depth
@@ -807,10 +807,16 @@ export class ExportConfirmationModal extends Modal {
 
 			allFilesToCopy.set(f.path, f);
 
-			if (f.extension !== "md") return;
+			if (f.extension !== "md" && f.extension !== "canvas") return;
 
 			const content = await this.plugin.app.vault.read(f);
-			const linkedPaths = FileUtils.getLinkedPaths(content);
+			let linkedPaths: string[] = [];
+
+			if (f.extension === "md") {
+				linkedPaths = FileUtils.getLinkedPaths(content);
+			} else if (f.extension === "canvas") {
+				linkedPaths = FileUtils.extractCanvasLinks(content);
+			}
 
 			for (const p of linkedPaths) {
 				const linked =

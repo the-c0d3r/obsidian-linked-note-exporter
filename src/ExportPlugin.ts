@@ -28,7 +28,7 @@ export default class ExportPlugin extends Plugin {
 		// Add file menu item
 		this.registerEvent(
 			this.app.workspace.on("file-menu", (menu: Menu, file: TFile) => {
-				if (file.extension === "md") {
+				if (file.extension === "md" || file.extension === "canvas") {
 					menu.addItem((item) => {
 						item.setTitle("Export with linked notes")
 							.setIcon("download")
