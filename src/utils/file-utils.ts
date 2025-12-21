@@ -10,6 +10,11 @@ export class FileUtils {
 		const mdLinks = content.match(/\[\[([^\]]+?)\]\]/g) || [];
 		const embeds = content.match(/!\[\[([^\]]+?)\]\]/g) || [];
 
+		// Match standard markdown links: [text](path) or ![text](path)
+		// Capture group 2 is the path
+		const standardLinks = Array.from(content.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g));
+		const standardEmbeds = Array.from(content.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
+
 		[...mdLinks, ...embeds].forEach((link) => {
 			const clean = link.replace(/!\[\[|\[\[|\]\]/g, "");
 			// For PDF files with fragment identifiers, extract only the filename before #
@@ -24,6 +29,55 @@ export class FileUtils {
 			}
 		});
 
+		// Process Markdown Links
+		[...standardLinks, ...standardEmbeds].forEach(match => {
+			const path = match[2];
+			// Ignore external links (protocol:// or mailto:)
+			if (path.match(/^([a-z][a-z0-9+.-]*:\/\/|mailto:)/i)) return;
+
+			// Decode URI (e.g. %20 -> space)
+			let cleanPath = decodeURI(path);
+
+			// Remove anchors
+			cleanPath = cleanPath.split('#')[0];
+
+			if (cleanPath) {
+				links.add(cleanPath);
+			}
+		});
+
+		return Array.from(links);
+	}
+
+	/**
+	 * Extract linked file paths from a Canvas file content
+	 */
+	static extractCanvasLinks(content: string): string[] {
+		const links = new Set<string>();
+		try {
+			const canvasData = JSON.parse(content);
+			if (!canvasData.nodes || !Array.isArray(canvasData.nodes)) {
+				return [];
+			}
+
+			// Define interface for minimal node structure
+			interface CanvasNode {
+				type: string;
+				file?: string;
+				text?: string;
+			}
+
+			for (const node of (canvasData.nodes as CanvasNode[])) {
+				if (node.type === 'file' && node.file) {
+					links.add(node.file);
+				} else if (node.type === 'text' && node.text) {
+					const textLinks = this.getLinkedPaths(node.text);
+					textLinks.forEach(link => links.add(link));
+				}
+			}
+		} catch (e) {
+			console.warn("Failed to parse canvas file content", e);
+		}
 		return Array.from(links);
 	}
 

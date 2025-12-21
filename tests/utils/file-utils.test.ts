@@ -34,6 +34,54 @@ describe('FileUtils', () => {
         });
     });
 
+    describe('extractCanvasLinks', () => {
+        it('should extract file nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'file', file: 'image.png' },
+                    { type: 'file', file: 'note.md' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toContain('image.png');
+            expect(result).toContain('note.md');
+        });
+
+        it('should extract links from text nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'text', text: 'Check [[wiki-link]] and [md-link](file.md)' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toContain('wiki-link');
+            expect(result).toContain('file.md');
+        });
+
+        it('should handle mixed nodes', () => {
+            const content = JSON.stringify({
+                nodes: [
+                    { type: 'file', file: 'image.png' },
+                    { type: 'text', text: '[[note]]' }
+                ]
+            });
+            const result = FileUtils.extractCanvasLinks(content);
+            expect(result).toHaveLength(2);
+            expect(result).toContain('image.png');
+            expect(result).toContain('note');
+        });
+
+        it('should return empty array for invalid json', () => {
+            const result = FileUtils.extractCanvasLinks('invalid json');
+            expect(result).toEqual([]);
+        });
+
+        it('should return empty array if no nodes', () => {
+            const result = FileUtils.extractCanvasLinks('{}');
+            expect(result).toEqual([]);
+        });
+    });
+
     describe('matchesIgnore', () => {
         it('should match exact tags', () => {
             expect(FileUtils.matchesIgnore('#private', ['#private'])).toBe(true);
