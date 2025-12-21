@@ -10,6 +10,12 @@ export class FileUtils {
 		const mdLinks = content.match(/\[\[([^\]]+?)\]\]/g) || [];
 		const embeds = content.match(/!\[\[([^\]]+?)\]\]/g) || [];
 
+		// Match standard markdown links: [text](path) or ![text](path)
+		// Capture group 2 is the path
+		const standardLinks = Array.from(content.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g));
+		const standardEmbeds = Array.from(content.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
+
+		// Process WikiLinks
 		[...mdLinks, ...embeds].forEach((link) => {
 			const clean = link.replace(/!\[\[|\[\[|\]\]/g, "");
 			// For PDF files with fragment identifiers, extract only the filename before #
@@ -24,6 +30,23 @@ export class FileUtils {
 			}
 		});
 
+		// Process Markdown Links
+		[...standardLinks, ...standardEmbeds].forEach(match => {
+			const path = match[2];
+			// Ignore external links (protocol:// or mailto:)
+			if (path.match(/^([a-z][a-z0-9+.-]*:\/\/|mailto:)/i)) return;
+
+			// Decode URI (e.g. %20 -> space)
+			let cleanPath = decodeURI(path);
+
+			// Remove anchors
+			cleanPath = cleanPath.split('#')[0];
+
+			if (cleanPath) {
+				links.add(cleanPath);
+			}
+		});
+
 		return Array.from(links);
 	}
 
@@ -31,18 +54,34 @@ export class FileUtils {
 	 * Extract all links with their positions (including embeds)
 	 */
 	static extractLinksFromContent(content: string): Array<{ linkText: string; position: number }> {
-		const linkRegex = /!?\[\[([^\]]+?)\]\]/g;
 		const linkMatches: Array<{ linkText: string; position: number }> = [];
-		let match;
 
-		while ((match = linkRegex.exec(content)) !== null) {
+		// WikiLinks: [[link]] or ![[link]]
+		const wikiRegex = /!?\[\[([^\]]+?)\]\]/g;
+		let match;
+		while ((match = wikiRegex.exec(content)) !== null) {
 			const linkText = match[1].split("|")[0].split("#")[0].trim();
 			linkMatches.push({
 				linkText,
 				position: match.index,
 			});
 		}
-		return linkMatches;
+
+		// Markdown Links: [text](path) or ![text](path)
+		const mdRegex = /!?\[([^\]]*)\]\(([^)]+)\)/g;
+		while ((match = mdRegex.exec(content)) !== null) {
+			const path = match[2];
+			// Ignore external links (protocol:// or mailto:)
+			if (path.match(/^([a-z][a-z0-9+.-]*:\/\/|mailto:)/i)) continue;
+
+			const linkText = decodeURI(path).split('#')[0];
+			linkMatches.push({
+				linkText,
+				position: match.index,
+			});
+		}
+
+		return linkMatches.sort((a, b) => a.position - b.position);
 	}
 
 	/**
