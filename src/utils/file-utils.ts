@@ -35,7 +35,7 @@ export class FileUtils {
 			// if the pattern ends with "/*", e.g. "#personal/*", also ignore "#personal"
 			if (pattern.endsWith("/*")) {
 				const prefix = pattern.slice(0, -2); // remove /*
-				if (tag.startsWith(prefix + "/")) return true;
+				if (tag === prefix || tag.startsWith(prefix + "/")) return true;
 			} else {
 				if (tag === pattern) return true;
 			}
