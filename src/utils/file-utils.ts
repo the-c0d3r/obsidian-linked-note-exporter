@@ -28,6 +28,24 @@ export class FileUtils {
 	}
 
 	/**
+	 * Extract all links with their positions (including embeds)
+	 */
+	static extractLinksFromContent(content: string): Array<{ linkText: string; position: number }> {
+		const linkRegex = /!?\[\[([^\]]+?)\]\]/g;
+		const linkMatches: Array<{ linkText: string; position: number }> = [];
+		let match;
+
+		while ((match = linkRegex.exec(content)) !== null) {
+			const linkText = match[1].split("|")[0].split("#")[0].trim();
+			linkMatches.push({
+				linkText,
+				position: match.index,
+			});
+		}
+		return linkMatches;
+	}
+
+	/**
 	 * Check if a tag matches an ignore pattern
 	 */
 	static matchesIgnore(tag: string, ignoreList: string[]): boolean {
@@ -35,7 +53,7 @@ export class FileUtils {
 			// if the pattern ends with "/*", e.g. "#personal/*", also ignore "#personal"
 			if (pattern.endsWith("/*")) {
 				const prefix = pattern.slice(0, -2); // remove /*
-				if (tag.startsWith(prefix + "/")) return true;
+				if (tag === prefix || tag.startsWith(prefix + "/")) return true;
 			} else {
 				if (tag === pattern) return true;
 			}
@@ -51,26 +69,30 @@ export class FileUtils {
 	}
 
 	/**
+	 * Normalize tags from various input formats to #tag array
+	 */
+	static normalizeTags(tags: string | string[] | undefined): string[] {
+		if (!tags) return [];
+
+		let tagArray: string[] = [];
+
+		if (Array.isArray(tags)) {
+			tagArray = tags.map(String);
+		} else if (typeof tags === "string") {
+			tagArray = [tags];
+		}
+
+		return tagArray.map((tag) => (tag.startsWith("#") ? tag : `#${tag}`));
+	}
+
+	/**
 	 * Get all tags from a file (frontmatter + inline)
 	 */
 	static getFileTags(file: TFile, app: any): string[] {
 		const cache = app.metadataCache.getFileCache(file);
 		if (!cache) return [];
 
-		let frontmatterTags: string[] = [];
-		const rawTags = cache.frontmatter?.tags;
-
-		// Normalize to array of strings
-		if (Array.isArray(rawTags)) {
-			frontmatterTags = rawTags.map(String);
-		} else if (typeof rawTags === "string") {
-			frontmatterTags = [rawTags];
-		}
-
-		// Normalize tags to #tag format
-		frontmatterTags = frontmatterTags.map((tag) =>
-			tag.startsWith("#") ? tag : `#${tag}`,
-		);
+		const frontmatterTags = this.normalizeTags(cache.frontmatter?.tags);
 
 		// Get inline tags
 		const inlineTags = (cache.tags ?? []).map((t: any) => t.tag);
@@ -78,6 +100,18 @@ export class FileUtils {
 		// Combine and return unique tags
 		const allTags = [...frontmatterTags, ...inlineTags];
 		return [...new Set(allTags)];
+	}
+
+	/**
+	 * Check if path matches any ignored folder patterns
+	 */
+	static isPathIgnored(path: string, ignoreFolders: string[]): string | false {
+		for (const folder of ignoreFolders) {
+			if (path.startsWith(folder + "/")) {
+				return `Folder path matches: ${folder}`;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -90,48 +124,18 @@ export class FileUtils {
 		ignoreTags: string[],
 	): string | false {
 		// Check folder exclusion
-		for (const folder of ignoreFolders) {
-			if (file.path.startsWith(folder + "/")) {
-				return `Folder path matches: ${folder}`;
-			}
-		}
+		const folderIgnoreReason = this.isPathIgnored(file.path, ignoreFolders);
+		if (folderIgnoreReason) return folderIgnoreReason;
 
 		// Check tag exclusion
-		const cache = app.metadataCache.getFileCache(file);
-		if (!cache) return false;
-
-		let frontmatterTags: string[] = [];
-		const rawTags = cache.frontmatter?.tags;
-
-		// Normalize to array of strings
-		if (Array.isArray(rawTags)) {
-			frontmatterTags = rawTags.map(String);
-		} else if (typeof rawTags === "string") {
-			frontmatterTags = [rawTags];
-		}
-
-		// Normalize tags to #tag format
-		frontmatterTags = frontmatterTags.map((tag) =>
-			tag.startsWith("#") ? tag : `#${tag}`,
-		);
-
-		// Check inline tags
-		const inlineTags = (cache.tags ?? []).map((t: any) => t.tag);
-		const allTags = [...frontmatterTags, ...inlineTags];
+		const tags = this.getFileTags(file, app);
 
 		// Check exclusion
-		for (const tag of allTags) {
-			for (const pattern of ignoreTags) {
-				if (pattern.endsWith("/*")) {
-					const prefix = pattern.slice(0, -2); // remove /*
-					if (tag.startsWith(prefix + "/")) {
-						return `Tag matches pattern: ${pattern}`;
-					}
-				} else {
-					if (tag === pattern) {
-						return `Tag matches: ${pattern}`;
-					}
-				}
+		for (const tag of tags) {
+			if (this.matchesIgnore(tag, ignoreTags)) {
+				// Find which pattern matched for the return message
+				const pattern = ignoreTags.find((p) => this.matchesIgnore(tag, [p]));
+				return `Tag matches: ${pattern || tag}`;
 			}
 		}
 
@@ -224,18 +228,8 @@ export class FileUtils {
 		// Read file content
 		const content = await app.vault.read(sourceFile);
 
-		// Extract all links with their positions (including embeds)
-		const linkRegex = /!?\[\[([^\]]+?)\]\]/g;
-		const linkMatches: Array<{ linkText: string; position: number }> = [];
-		let match;
-
-		while ((match = linkRegex.exec(content)) !== null) {
-			const linkText = match[1].split("|")[0].split("#")[0].trim();
-			linkMatches.push({
-				linkText,
-				position: match.index,
-			});
-		}
+		// Extract all links
+		const linkMatches = this.extractLinksFromContent(content);
 
 		if (linkMatches.length === 0) {
 			return fileToHeaderPaths;
@@ -321,7 +315,7 @@ export class FileUtils {
 	/**
 	 * Get the hierarchical header path at a specific position in the file
 	 */
-	private static getHeaderPathAtPosition(
+	static getHeaderPathAtPosition(
 		position: number,
 		headings: any[],
 		sourceFileName: string,
