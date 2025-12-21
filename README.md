@@ -6,6 +6,8 @@ Export a note along with all its attachments and linked notes—cleanly, conveni
 
 -   Export a note to a directory outside your vault
 -   Include all embedded/linked files (images, PDFs, etc.)
+-   **Canvas Support**: Exports files linked in Canvas and links inside text nodes
+-   **Link Support**: Handles both **WikiLinks** `[[Link]]` and **Markdown Links** `[Link](path.md)`
 -   Include notes linked from the source note, up to configurable link depth
 -   Organize exported files by document header structure (H2, H3, etc.)
 -   Optionally zip the export
@@ -91,6 +93,23 @@ Project Overview/
 -   Supports wildcards:
     -   `#personal/*` excludes tags like `#personal/notes`, `#personal/thoughts`, etc. This also excludes `#personal`.
     -   `#private` by itself excludes that tag only.
+
+## 🔗 Link Resolution
+
+The plugin is smart enough to handle all 3 of Obsidian's link resolution strategies:
+
+1.  **Shortest path**: Matches the file with the shortest path (e.g. `[[Note]]` matches `Folder/Note.md`).
+2.  **Relative path**: Resolves links relative to the current file.
+3.  **Absolute path**: Resolves links from the root of the vault.
+
+It also seamlessly supports mixed usage of **WikiLinks** and standard **Markdown Links** in the same document.
+
+## 🎨 Canvas Support
+
+Obsidian Canvas files (`.canvas`) are fully supported. The plugin will export:
+-   Files directly added to the canvas.
+-   Links inside text cards on the canvas.
+
 
 ## 🧭 How to Use
 
