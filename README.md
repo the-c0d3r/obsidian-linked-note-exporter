@@ -19,6 +19,8 @@ You’ve crafted a beautiful note with images and cross-links—but sharing it d
 
 ## 🖼️ See it in action
 
+![demo](assets/demo.png)
+
 ![demo](assets/demo.gif)
 
 ## 🧭 How to Use
