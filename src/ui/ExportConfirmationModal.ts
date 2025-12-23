@@ -916,22 +916,37 @@ export class ExportConfirmationModal extends Modal {
 		nameLine.style.color = "var(--text-normal)";
 		nameLine.style.opacity = "1";
 
-		details.createEl("div", { cls: "file-path", text: file.path });
+		// File path - highlight matching folder in red if filtered
+		const pathEl = details.createEl("div", { cls: "file-path" });
+		const ignoreFolders = this.ignoreFoldersInput?.value.split(",").map(f => f.trim()).filter(f => f) || [];
+		const matchingFolder = ignoreFolders.find(folder => file.path === folder || file.path.startsWith(folder + "/"));
 
-		// Tags
+		if (isFiltered && matchingFolder) {
+			const escapedFolder = matchingFolder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pathEl.innerHTML = file.path.replace(
+				new RegExp(`(${escapedFolder})`, 'i'),
+				'<span style="color: var(--text-error) !important; font-weight: 600;">$1</span>'
+			);
+		} else {
+			pathEl.textContent = file.path;
+		}
+
+		// Tags - highlight matching tag in red if filtered by tag
 		const tags = FileUtils.getFileTags(file, this.plugin.app);
 		if (tags.length > 0) {
 			const tagContainer = wrapper.createEl("div", { cls: "file-tags" });
+			const ignoreTags = this.ignoreTagsInput?.value.split(",").map(t => t.trim()).filter(t => t) || [];
+
 			tags.forEach((tag) => {
-				tagContainer.createEl("span", { cls: "tag", text: tag });
+				const tagEl = tagContainer.createEl("span", { cls: "tag", text: tag });
+				// Use FileUtils for reliable matching (handles wildcards like /*)
+				if (isFiltered && FileUtils.matchesIgnore(tag, ignoreTags)) {
+					tagEl.style.setProperty("color", "var(--text-error)", "important");
+					tagEl.style.fontWeight = "600";
+				}
 			});
 		}
-
-		// Exclusion Indicator
-		if (isFiltered && filterReason) {
-			const indicator = wrapper.createEl("div", { cls: "exclusion-indicator" });
-			indicator.createEl("span", { text: `${filterReason}` });
-		}
+		// No separate exclusion indicator - matching is shown inline
 	}
 
 	private addFilteredFilesSeparator(
