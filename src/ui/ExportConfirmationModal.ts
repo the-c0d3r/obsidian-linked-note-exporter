@@ -23,6 +23,7 @@ export class ExportConfirmationModal extends Modal {
 	private headerMap: Map<string, string[][]>;
 	private parentMap: Map<string, Set<string>>;
 	private depthMap: Map<string, number>;
+	private childrenMap: Map<string, Set<string>>; // Map<parentPath, Set<childPath>>
 
 	constructor(
 		app: App,
@@ -55,11 +56,388 @@ export class ExportConfirmationModal extends Modal {
 		this.headerMap = new Map();
 		this.parentMap = new Map();
 		this.depthMap = new Map();
+		this.childrenMap = new Map();
+	}
+
+	private injectStyles() {
+		const styleId = "export-modal-styles";
+		let styleEl = document.getElementById(styleId) as HTMLStyleElement;
+
+		if (!styleEl) {
+			styleEl = document.createElement("style");
+			styleEl.id = styleId;
+			document.head.appendChild(styleEl);
+		}
+
+		styleEl.textContent = `
+			/* Variables removed to use global defaults */
+
+
+            /* Source Info Card */
+            .export-source-info {
+                background-color: var(--background-secondary);
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .source-details {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .source-label {
+                color: var(--text-muted);
+                font-size: 0.8em;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .source-name {
+                font-weight: 600;
+                font-size: 0.95em;
+            }
+
+            .source-stats {
+                display: flex;
+                gap: 12px;
+                font-size: 0.85em;
+                color: var(--text-muted);
+            }
+
+            .stat-item strong {
+                color: var(--text-normal);
+            }
+
+            /* Collapsible Section */
+            .settings-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px; /* Reduced from 15px */
+                margin-bottom: 15px;
+            }
+            
+            .collapsible-header {
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                user-select: none;
+                padding: 8px 0;
+                margin-bottom: 10px;
+                font-weight: 600;
+                font-size: 0.95em;
+                color: var(--text-normal);
+            }
+
+            .collapsible-icon {
+                margin-right: 8px;
+                transition: transform 0.2s ease;
+                font-size: 0.8em;
+                color: var(--text-muted);
+            }
+
+            .collapsible-content {
+                display: none;
+                padding-left: 10px;
+                margin-bottom: 20px;
+                border-left: 2px solid var(--background-modifier-border);
+            }
+
+            .collapsible-content.open {
+                display: block;
+            }
+
+            /* Settings Items - Remove horizontal lines and padding from Obsidian's default */
+            .export-modal-root .setting-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+                border-bottom: none !important;
+            }
+            
+            /* Also target any nested setting items and grid children */
+            .export-modal-root .settings-group > * {
+                border: none !important;
+                border-bottom: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .setting-info {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+
+            .setting-label {
+                font-size: 0.9em;
+                font-weight: 500;
+            }
+
+            .setting-desc {
+                font-size: 0.8em;
+                color: var(--text-muted);
+            }
+
+            /* Range Container for slider */
+            .range-container {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .range-container input[type="range"] {
+                width: 150px;
+                accent-color: var(--interactive-accent);
+            }
+
+            .range-container span {
+                min-width: 20px;
+                text-align: center;
+                font-size: 0.9em;
+            }
+
+            /* Toggles */
+            .toggle-switch {
+                width: 36px;
+                height: 20px;
+                background-color: #444;
+                border-radius: 10px;
+                position: relative;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+
+            .toggle-switch.active {
+                background-color: var(--interactive-accent);
+            }
+
+            .toggle-knob {
+                width: 16px;
+                height: 16px;
+                background-color: white;
+                border-radius: 50%;
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                transition: transform 0.2s;
+            }
+
+            .toggle-switch.active .toggle-knob {
+                transform: translateX(16px);
+            }
+
+            .toggle-switch-input {
+                display: none;
+            }
+
+            /* File List */
+            .file-list-header {
+                font-size: 0.9em;
+                font-weight: 600;
+                margin-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+
+			/* File List - Scoped to .export-modal-root to win specificity wars */
+            .export-modal-root .file-list-header {
+                font-size: 0.9em;
+                font-weight: 600;
+                margin-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .export-modal-root .export-file-list {
+                background-color: var(--background-secondary);
+                border: 1px solid var(--background-modifier-border);
+                border-radius: 6px;
+                max-height: 300px;
+                overflow-y: auto;
+                padding: 0 !important; /* Override default padding */
+            }
+
+            .export-modal-root .file-tree-item {
+                display: flex;
+                align-items: center;
+                padding: 4px 12px;
+                border-bottom: 1px solid var(--background-modifier-border);
+                position: relative;
+                opacity: 1; /* Force opacity for wrapper */
+            }
+
+            .export-modal-root .file-tree-item:last-child {
+                border-bottom: none;
+            }
+
+            /* Tree Lines */
+			.export-modal-root .tree-indent {
+				display: flex;
+				align-items: center;
+				height: 100%;
+				margin-right: 4px;
+			}
+			
+			.export-modal-root .tree-line {
+				width: 24px;
+				height: 100%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				position: relative;
+				color: var(--text-muted);
+				opacity: 0.3; /* Inner line opacity only */
+				font-family: monospace;
+				font-size: 1.2em;
+				user-select: none;
+			}
+
+            .export-modal-root .file-content-wrapper {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 4px 0;
+                overflow: hidden;
+            }
+
+            .export-modal-root .file-tree-item.filtered {
+                opacity: 0.7;
+                background-color: rgba(60, 20, 20, 0.3);
+            }
+            
+            .export-modal-root .file-tree-item.filtered .file-name {
+                text-decoration: line-through;
+                color: var(--text-muted);
+            }
+
+            /* Fix Checkbox Visibility - Aggressive Overrides */
+            .export-modal-root .file-content-wrapper input[type="checkbox"] {
+                display: inline-block !important; /* Override 'none' */
+                visibility: visible !important;   /* Override 'hidden' */
+                opacity: 1 !important;            /* Override transparency */
+                width: 16px !important; 
+                height: 16px !important;
+                margin: 0 !important;
+                cursor: pointer;
+                position: static !important;
+                -webkit-appearance: checkbox !important;
+                appearance: checkbox !important;
+                filter: none !important;
+            }
+
+            /* Hide Obsidian theme's custom checkbox pseudo-elements */
+            .export-modal-root .file-content-wrapper input[type="checkbox"]::after,
+            .export-modal-root .file-content-wrapper input[type="checkbox"]::before {
+                display: none !important;
+                content: none !important;
+                visibility: hidden !important;
+            }
+
+            .export-modal-root .exclusion-indicator {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-left: auto;
+                font-size: 0.75em;
+                color: var(--text-error);
+                background-color: rgba(255, 107, 107, 0.1);
+                padding: 2px 8px;
+                border-radius: 10px;
+            }
+
+            .export-modal-root .file-details {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                overflow: hidden;
+            }
+
+            .export-modal-root .file-name {
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--text-normal);
+                font-family: var(--font-monospace);
+            }
+
+            .export-modal-root .file-path {
+                font-size: 0.85em;
+                color: var(--text-muted);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .export-modal-root .file-tags {
+                margin-left: 10px;
+                display: flex;
+                gap: 4px;
+                align-items: center;
+                overflow: hidden;
+                flex-shrink: 3;
+                max-width: 40%;
+                mask-image: linear-gradient(to right, black 85%, transparent 100%);
+                -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            }
+
+            .export-modal-root .tag {
+                background: var(--background-modifier-border);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.75em;
+                color: var(--text-muted);
+                white-space: nowrap;
+            }
+
+            /* File Icon */
+            .export-modal-root .file-icon {
+                font-size: 1.1em;
+                flex-shrink: 0;
+            }
+
+            /* Range/Slider styling */
+            .export-modal-root input[type="range"] {
+                width: 100%;
+                accent-color: var(--interactive-accent);
+            }
+
+            /* Input text styling */
+            .export-modal-root input[type="text"] {
+                background-color: var(--background-secondary);
+                border: 1px solid var(--background-modifier-border);
+                color: var(--text-normal);
+                padding: 6px 10px;
+                border-radius: 4px;
+                width: 100%;
+                font-size: 0.9em;
+            }
+		`;
 	}
 
 	async onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
+		contentEl.addClass("export-modal-root");
+		// Ensure background is solid
+		contentEl.style.backgroundColor = "var(--background-primary)";
+		this.injectStyles();
 
 		// Calculate files to export based on current link depth
 		await this.recalculateFiles();
@@ -96,349 +474,199 @@ export class ExportConfirmationModal extends Modal {
 		});
 		sourceInfo.empty();
 
-		sourceInfo.createEl("strong", { text: "Exporting Note: " });
-		sourceInfo.createEl("span", { text: this.sourceFile.path });
-		sourceInfo.createEl("br");
+		const details = sourceInfo.createEl("div", { cls: "source-details" });
+		details.createEl("span", { cls: "source-label", text: "Exporting Note" });
+		details.createEl("span", { cls: "source-name", text: this.sourceFile.basename });
+		details.createEl("span", {
+			text: this.sourceFile.path,
+			attr: { style: "font-size: 0.8em; color: var(--text-muted);" }
+		});
 
-		// sourceInfo.createEl("strong", {
-		// 	text: "Total files to export: ",
-		// });
-		sourceInfo.createEl("span", { text: "Loading..." });
-		sourceInfo.style.marginBottom = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
-		sourceInfo.style.padding = UI_CONSTANTS.SPACING.DEFAULT_PADDING;
-		sourceInfo.style.fontSize = UI_CONSTANTS.FONT_SIZES.SOURCE_INFO;
+		const stats = sourceInfo.createEl("div", { cls: "source-stats" });
+
+		// Will poplate stats in updateSourceInfo
+		stats.id = "source-stats-container";
+		stats.createEl("span", { text: "Loading..." });
 	}
 
 	private createExportSettingsSection() {
-		const section = this.contentEl.createEl("div", { cls: "export-settings-section" });
+		const section = this.contentEl.createEl("div", { cls: "collapsible-section" });
 
 		// --- Header ---
-		const header = section.createEl("div", { cls: "export-settings-header" });
-		header.addClass("setting-item"); // Use Obsidian's style
-		const heading = header.createEl("div", { cls: "setting-item-name" });
-		heading.style.display = "flex";
-		heading.style.alignItems = "center";
-		heading.style.cursor = "pointer";
-		heading.style.marginBottom = UI_CONSTANTS.SPACING.SMALL_MARGIN;
-		heading.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-
-		const icon = heading.createEl("span", { text: "▸" });
-		icon.style.marginRight = "6px";
-		icon.style.transition = "transform 0.2s ease";
-
-		heading.createEl("span", { text: "Configure Export" });
+		const header = section.createEl("div", { cls: "collapsible-header" });
+		const icon = header.createEl("span", { cls: "collapsible-icon", text: "▶" });
+		header.createEl("span", { text: "Configure Export" });
 
 		// --- Content ---
-		const content = section.createEl("div", { cls: "export-settings-content" });
-		content.style.display = "none";
-		content.style.marginLeft = "20px";
-		content.style.marginRight = "20px";
-		content.style.marginBottom = "10px";
+		const content = section.createEl("div", { cls: "collapsible-content", attr: { id: "settings-content" } });
+		const settingsGroup = content.createEl("div", {
+			cls: "settings-group",
+			attr: { style: "display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;" }
+		});
 
-		this.createLinkDepthControl(content);
-		this.createIgnoreFoldersSetting(content);
-		this.createIgnoreTagsSetting(content);
-		this.createToggleButtons(content);
+		this.createLinkDepthControl(settingsGroup);
+		this.createIgnoreSettings(settingsGroup);
+		this.createToggleButtons(settingsGroup);
 
 		// --- Toggle behavior ---
-		let expanded = false;
-		heading.addEventListener("click", () => {
-			expanded = !expanded;
-			content.style.display = expanded ? "block" : "none";
-			icon.style.transform = expanded ? "rotate(90deg)" : "rotate(0deg)";
+		header.addEventListener("click", () => {
+			content.toggleClass("open", !content.hasClass("open"));
+			if (content.hasClass("open")) {
+				icon.textContent = "▼";
+				icon.style.transform = "rotate(0deg)"; // reset rotation if we used it before
+			} else {
+				icon.textContent = "▶";
+			}
 		});
 	}
 
 	private createLinkDepthControl(container: HTMLElement) {
-		const row = container.createEl("div", {
-			cls: "export-link-depth-row",
-		});
-		row.style.display = "flex";
-		row.style.alignItems = "center";
-		row.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
-		row.style.marginBottom = "6px";
+		// Match test.html: div.setting-item > div.setting-info + div.range-container
+		const item = container.createEl("div", { cls: "setting-item" });
 
-		// Label column
-		const labelCol = row.createEl("div", {
-			cls: "export-link-depth-label-col",
-		});
-		labelCol.style.flex = "0 0 120px";
-		labelCol.style.display = "flex";
-		labelCol.style.alignItems = "center";
-		const linkDepthLabel = labelCol.createEl("label", {
-			text: "Linked notes:",
-		});
-		linkDepthLabel.title = "How deep should we follow links?";
-		linkDepthLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
-		linkDepthLabel.style.marginBottom = "0";
+		// Setting Info (label + description)
+		const info = item.createEl("div", { cls: "setting-info" });
+		info.createEl("span", { cls: "setting-label", text: "Linked Notes Depth" });
+		info.createEl("span", { cls: "setting-desc", text: "Includes notes linked by this note" });
 
-		// Input + value column
-		const inputCol = row.createEl("div", {
-			cls: "export-link-depth-slider",
-		});
-		inputCol.style.flex = "1";
-		inputCol.style.display = "flex";
-		inputCol.style.alignItems = "center";
+		// Range container (slider + value)
+		const rangeContainer = item.createEl("div", { cls: "range-container" });
 
 		// Slider
-		this.linkDepthSlider = inputCol.createEl("input", {
-			type: "range",
-		});
+		this.linkDepthSlider = rangeContainer.createEl("input", { type: "range" });
 		this.linkDepthSlider.min = "0";
-		this.linkDepthSlider.max = "10";
+		this.linkDepthSlider.max = "5";
 		this.linkDepthSlider.step = "1";
 		this.linkDepthSlider.value = this.currentLinkDepth.toString();
-		this.linkDepthSlider.style.flex = "1";
-		this.linkDepthSlider.style.height = "4px";
-		this.linkDepthSlider.style.marginRight = "8px";
-		this.linkDepthSlider.style.verticalAlign = "middle";
 
 		// Value display
-		const linkDepthValue = inputCol.createEl("span", {
-			cls: "export-link-depth-value",
-		});
+		const linkDepthValue = rangeContainer.createEl("span");
 		linkDepthValue.textContent = this.currentLinkDepth.toString();
-		linkDepthValue.style.fontSize = "0.8em";
-		linkDepthValue.style.marginLeft = "6px";
-		linkDepthValue.style.color = "var(--text-muted)";
-		linkDepthValue.style.display = "inline-block";
-		linkDepthValue.style.minWidth = "20px";
-		linkDepthValue.style.textAlign = "right";
-		linkDepthValue.style.verticalAlign = "middle"; // aligns with slider thumb
 
 		// Update on slider change
 		this.linkDepthSlider.oninput = async (e) => {
 			const newDepth = parseInt((e.target as HTMLInputElement).value);
 			linkDepthValue.textContent = newDepth.toString();
-			const depthValueElement = document.getElementById("link-depth-value");
-			if (depthValueElement) depthValueElement.textContent = newDepth.toString();
 
 			if (newDepth !== this.currentLinkDepth) {
 				this.currentLinkDepth = newDepth;
 				await this.recalculateFiles();
+				// Re-render file list
+				const fileListContainer = this.contentEl.querySelector(".export-file-list") as HTMLElement;
+				if (fileListContainer) {
+					fileListContainer.empty();
+					this.renderFileList(fileListContainer);
+				}
 			}
 		};
 	}
 
-	private createIgnoreFoldersSetting(container: HTMLElement) {
-		const row = container.createEl("div", {
-			cls: "export-ignore-folders-row",
-		});
-		row.style.display = "flex";
-		row.style.alignItems = "center";
-		row.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
-		row.style.marginBottom = "6px";
+	private createIgnoreSettings(container: HTMLElement) {
+		const item = container.createEl("div", { cls: "setting-item", attr: { style: "align-items: flex-start; flex-direction: column; gap: 8px;" } });
 
-		const labelCol = row.createEl("div", {
-			cls: "export-ignore-folders-label-col",
-		});
-		labelCol.style.flex = "0 0 120px";
-		labelCol.style.display = "flex";
-		labelCol.style.alignItems = "center";
-		const ignoreFoldersLabel = labelCol.createEl("label", {
-			text: "Folders to skip:",
-		});
-		ignoreFoldersLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
-		ignoreFoldersLabel.style.marginBottom = "0";
+		const info = item.createEl("div", { cls: "setting-info" });
+		info.createEl("span", { cls: "setting-label", text: "Skip Content" });
 
-		const inputCol = row.createEl("div", {
-			cls: "export-ignore-folders-input-col",
-		});
-		inputCol.style.flex = "1";
-		this.ignoreFoldersInput = inputCol.createEl("input", {
-			type: "text",
-		});
-		this.ignoreFoldersInput.placeholder = "e.g. Templates, Archive (comma separated)";
-		this.ignoreFoldersInput.value =
-			this.plugin.settings.ignoreFolders.join(", ");
-		this.ignoreFoldersInput.style.width = "100%";
-		this.ignoreFoldersInput.style.padding =
-			UI_CONSTANTS.SPACING.SMALL_PADDING;
-		this.ignoreFoldersInput.style.borderRadius = "3px";
-		this.ignoreFoldersInput.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
-		this.ignoreFoldersInput.style.backgroundColor =
-			UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY;
+		const inputsRow = item.createEl("div", { attr: { style: "display: flex; gap: 10px; width: 100%;" } });
 
-		this.ignoreFoldersInput.addEventListener("input", async () => {
-			await this.recalculateFiles();
-		});
-	}
+		// Folders Input
+		this.ignoreFoldersInput = inputsRow.createEl("input", { type: "text" });
+		this.ignoreFoldersInput.placeholder = "Folders (e.g. Templates)";
+		this.ignoreFoldersInput.value = this.plugin.settings.ignoreFolders.join(", ");
+		this.ignoreFoldersInput.style.flex = "1";
 
-	private createIgnoreTagsSetting(container: HTMLElement) {
-		const row = container.createEl("div", {
-			cls: "export-ignore-tags-row",
-		});
-		row.style.display = "flex";
-		row.style.alignItems = "center";
-		row.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
-
-		const labelCol = row.createEl("div", {
-			cls: "export-ignore-tags-label-col",
-		});
-		labelCol.style.flex = "0 0 120px";
-		labelCol.style.display = "flex";
-		labelCol.style.alignItems = "center";
-		const ignoreTagsLabel = labelCol.createEl("label", {
-			text: "Tags to skip:",
-		});
-		ignoreTagsLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
-		ignoreTagsLabel.style.marginBottom = "0";
-
-		const inputCol = row.createEl("div", {
-			cls: "export-ignore-tags-input-col",
-		});
-		inputCol.style.flex = "1";
-		this.ignoreTagsInput = inputCol.createEl("input", {
-			type: "text",
-		});
-		this.ignoreTagsInput.placeholder = "e.g. #draft, #personal/*";
+		// Tags Input
+		this.ignoreTagsInput = inputsRow.createEl("input", { type: "text" });
+		this.ignoreTagsInput.placeholder = "Tags (e.g. #private)";
 		this.ignoreTagsInput.value = this.plugin.settings.ignoreTags.join(", ");
-		this.ignoreTagsInput.style.width = "100%";
-		this.ignoreTagsInput.style.padding = UI_CONSTANTS.SPACING.SMALL_PADDING;
-		this.ignoreTagsInput.style.borderRadius = "3px";
-		this.ignoreTagsInput.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
-		this.ignoreTagsInput.style.backgroundColor =
-			UI_CONSTANTS.COLORS.BACKGROUND_PRIMARY;
+		this.ignoreTagsInput.style.flex = "1";
 
-		this.ignoreTagsInput.addEventListener("input", async () => {
+		const handleInput = async () => {
 			await this.recalculateFiles();
-		});
+			const fileListContainer = this.contentEl.querySelector(".export-file-list") as HTMLElement;
+			if (fileListContainer) {
+				fileListContainer.empty();
+				this.renderFileList(fileListContainer);
+			}
+		};
+
+		this.ignoreFoldersInput.addEventListener("input", handleInput);
+		this.ignoreTagsInput.addEventListener("input", handleInput);
 	}
+
+	// Deleted old separate methods
+	// private createIgnoreFoldersSetting(container: HTMLElement) { ... }
+	// private createIgnoreTagsSetting(container: HTMLElement) { ... }
 
 	private createFileList() {
+		// File list header (outside the scrollable container)
+		const fileListHeader = this.contentEl.createEl("div", {
+			cls: "file-list-header",
+		});
+		fileListHeader.createEl("span", { text: "Files:" });
+		const selectedCount = fileListHeader.createEl("span", { cls: "file-meta" });
+		selectedCount.id = "selected-file-count";
+
+		// Scrollable file list container
 		const fileListContainer = this.contentEl.createEl("div", {
 			cls: "export-file-list",
 		});
-		fileListContainer.style.maxHeight =
-			UI_CONSTANTS.MODAL.MAX_FILE_LIST_HEIGHT;
+		fileListContainer.style.maxHeight = UI_CONSTANTS.MODAL.MAX_FILE_LIST_HEIGHT;
 		fileListContainer.style.overflowY = "auto";
-		// fileListContainer.style.border = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
-		fileListContainer.style.borderRadius = "4px";
-		fileListContainer.style.padding = UI_CONSTANTS.SPACING.DEFAULT_PADDING;
-		fileListContainer.style.marginBottom =
-			UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
+		fileListContainer.style.marginBottom = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
 
-		const fileListHeader = fileListContainer.createEl("div", {
-			cls: "export-file-list-header",
-		});
-		fileListHeader.empty();
-		fileListHeader.createEl("strong", { text: "Files:" });
-		fileListHeader.style.marginBottom = UI_CONSTANTS.SPACING.SMALL_MARGIN;
-		fileListHeader.style.borderBottom = `1px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
-		fileListHeader.style.paddingBottom = UI_CONSTANTS.SPACING.SMALL_PADDING;
-
-		const fileList = fileListContainer.createEl("div", {
-			cls: "export-file-list-items",
-		});
-		this.renderFileList(fileList);
+		this.renderFileList(fileListContainer);
 	}
 
-	private createToggleButtons(
-		container: HTMLElement,
-	) {
-		const row = container.createEl("div", {
-			cls: "export-advanced-options-row",
-		});
-		row.style.display = "flex";
-		row.style.flexDirection = "column";
-		row.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		row.style.marginTop = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
+	private createToggleButtons(container: HTMLElement) {
+		const grid = container.createEl("div", { attr: { style: "display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 5px;" } });
 
-		// First row: ZIP and Keep folder structure
-		const firstRow = row.createEl("div");
-		firstRow.style.display = "flex";
-		firstRow.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
-		firstRow.style.justifyContent = "space-between";
-		firstRow.style.alignItems = "center";
+		// Helper to create a toggle item
+		const createToggleItem = (label: string, title: string, defaultChecked: boolean) => {
+			const item = grid.createEl("div", { cls: "setting-item" });
+			item.createEl("span", { cls: "setting-label", text: label }).title = title;
 
-		// ZIP toggle (left column)
-		const zipCol = firstRow.createEl("div", { cls: "export-zip-toggle-col" });
-		zipCol.style.flex = "1";
-		zipCol.style.display = "flex";
-		zipCol.style.alignItems = "center";
-		const zipLabel = zipCol.createEl("label", {
-			cls: "export-zip-toggle-label",
-		});
-		zipLabel.style.display = "flex";
-		zipLabel.style.alignItems = "center";
-		zipLabel.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		zipLabel.style.cursor = "pointer";
-		zipLabel.title = "Compress all exported files into export.zip";
-		this.zipToggle = zipLabel.createEl("input", { type: "checkbox" });
-		this.zipToggle.checked = this.defaultZipSetting;
-		this.zipToggle.style.margin = "0";
-		const zipToggleText = zipLabel.createEl("span");
-		zipToggleText.createEl("strong", { text: "Create ZIP archive" });
+			const toggleWrapper = item.createEl("div", { cls: "toggle-switch" });
+			if (defaultChecked) toggleWrapper.addClass("active");
+			toggleWrapper.createEl("div", { cls: "toggle-knob" });
 
-		// Directory structure toggle (right column)
-		const dirCol = firstRow.createEl("div", {
-			cls: "export-directory-toggle-col",
-		});
-		dirCol.style.flex = "1";
-		dirCol.style.display = "flex";
-		dirCol.style.alignItems = "center";
-		const dirLabel = dirCol.createEl("label", {
-			cls: "export-directory-toggle-label",
-		});
-		dirLabel.style.display = "flex";
-		dirLabel.style.alignItems = "center";
-		dirLabel.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		dirLabel.style.cursor = "pointer";
-		dirLabel.title = "Preserve the original folder hierarchy in the export";
-		this.keepFolderStructureToggle = dirLabel.createEl("input", {
-			type: "checkbox",
-		});
-		this.keepFolderStructureToggle.checked =
-			this.defaultkeepFolderStructureSetting;
-		this.keepFolderStructureToggle.style.margin = "0";
-		const dirToggleText = dirLabel.createEl("span");
-		dirToggleText.createEl("strong", { text: "Maintain Vault Folders" });
+			// Actual checkbox (hidden)
+			const input = toggleWrapper.createEl("input", { type: "checkbox", cls: "toggle-switch-input" });
+			input.checked = defaultChecked;
+			input.style.display = "none";
 
-		// Mutual exclusivity: when Keep folder structure is checked, uncheck Use header hierarchy
+			toggleWrapper.addEventListener("click", () => {
+				input.checked = !input.checked;
+				toggleWrapper.toggleClass("active", input.checked);
+				input.dispatchEvent(new Event("change"));
+			});
+
+			return input;
+		};
+
+		this.zipToggle = createToggleItem("Create ZIP", "Compress all exported files into export.zip", this.defaultZipSetting);
+		this.keepFolderStructureToggle = createToggleItem("Maintain Folders", "Preserve the original folder hierarchy in the export", this.defaultkeepFolderStructureSetting);
+		this.useHeaderHierarchyToggle = createToggleItem("Header Groups", "Organize exported files by the header structure in the source note", this.defaultUseHeaderHierarchy);
+
+		// Mutual exclusivity
 		this.keepFolderStructureToggle.addEventListener("change", () => {
 			if (this.keepFolderStructureToggle.checked && this.useHeaderHierarchyToggle) {
-				this.useHeaderHierarchyToggle.checked = false;
-				// Clear header map since it's no longer needed
+				if (this.useHeaderHierarchyToggle.checked) {
+					// Manually click to trigger visual update or just update props
+					const wrapper = this.useHeaderHierarchyToggle.parentElement;
+					if (wrapper) wrapper.click();
+				}
 				this.headerMap = new Map();
 			}
 		});
 
-		// Second row: Header hierarchy toggle
-		const secondRow = row.createEl("div");
-		secondRow.style.display = "flex";
-		secondRow.style.gap = UI_CONSTANTS.SPACING.DEFAULT_GAP;
-		secondRow.style.alignItems = "center";
-
-		const headerCol = secondRow.createEl("div", {
-			cls: "export-header-hierarchy-toggle-col",
-		});
-		headerCol.style.flex = "1";
-		headerCol.style.display = "flex";
-		headerCol.style.alignItems = "center";
-		const headerLabel = headerCol.createEl("label", {
-			cls: "export-header-hierarchy-toggle-label",
-		});
-		headerLabel.style.display = "flex";
-		headerLabel.style.alignItems = "center";
-		headerLabel.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		headerLabel.style.cursor = "pointer";
-		headerLabel.title =
-			"Organize exported files by the header structure in the source note";
-		this.useHeaderHierarchyToggle = headerLabel.createEl("input", {
-			type: "checkbox",
-		});
-		this.useHeaderHierarchyToggle.checked = this.defaultUseHeaderHierarchy;
-		this.useHeaderHierarchyToggle.style.margin = "0";
-		const headerToggleText = headerLabel.createEl("span");
-		headerToggleText.createEl("strong", { text: "Organize by Headers" });
-
-		// Rebuild header map when toggle changes
 		this.useHeaderHierarchyToggle.addEventListener("change", async () => {
 			if (this.useHeaderHierarchyToggle.checked) {
-				// Mutual exclusivity: uncheck Keep folder structure
-				this.keepFolderStructureToggle.checked = false;
+				if (this.keepFolderStructureToggle.checked) {
+					const wrapper = this.keepFolderStructureToggle.parentElement;
+					if (wrapper) wrapper.click();
+				}
 
-				// Build header map
 				this.headerMap = await FileUtils.buildHeaderHierarchyAsync(
 					this.sourceFile,
 					this.plugin.app,
@@ -527,158 +755,182 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private renderFileList(fileList: HTMLElement) {
-		// Sort files: markdown files first, then by name
-		const sortedFiles = FileUtils.sortFiles(
-			Array.from(this.filesToExport.values()),
-		);
+		const visitedPaths = new Set<string>();
 
-		sortedFiles.forEach((file, index) => {
-			this.createFileItem(
-				fileList,
-				file,
-				index,
-				sortedFiles.length,
-				false,
-			);
-		});
+		// Helper to recursively render tree
+		const renderTreeRecursive = (filePath: string, depth: number, indentGuides: string[], isLastChild: boolean) => {
+			if (visitedPaths.has(filePath)) return;
+			visitedPaths.add(filePath);
 
-		// Add filtered files (if any)
-		if (this.filteredFiles.size > 0) {
-			this.addFilteredFilesSeparator(fileList, sortedFiles.length > 0);
-			// this.renderFilteredFiles(fileList);
+			let file = this.filesToExport.get(filePath);
+			let isFiltered = false;
+			let filteredItem: FilteredFile | undefined;
 
-			const sortedFilteredFiles = FileUtils.sortFiles(
-				Array.from(this.filteredFiles.values()).map((f) => f.file),
-			);
-
-			sortedFilteredFiles.forEach((file, index) => {
-				const filteredItem = this.filteredFiles.get(file.path);
+			// If not in export list, check filtered list
+			if (!file) {
+				filteredItem = this.filteredFiles.get(filePath);
 				if (filteredItem) {
-					this.createFileItem(
-						fileList,
-						file,
-						index,
-						sortedFilteredFiles.length,
-						true,
-					);
+					file = filteredItem.file;
+					isFiltered = true;
 				}
-			});
+			}
+			if (!file) return;
 
-		}
+			this.createTreeNode(fileList, file, depth, indentGuides, isFiltered, isLastChild, filteredItem?.reason);
+
+			const children = this.childrenMap.get(filePath);
+			if (children && children.size > 0) {
+				const sortedChildren = FileUtils.sortFiles(
+					Array.from(children).map(childPath => {
+						return this.filesToExport.get(childPath) || this.filteredFiles.get(childPath)?.file;
+					}).filter(Boolean) as TFile[]
+				);
+
+				// Prepare guides for children
+				const childGuides = [...indentGuides];
+				// Add a guide for the current level.
+				// If we are not at root (depth 0), we add a guide segment.
+				// If we are root, we don't start shifting yet for our children?
+				// Actually, root has no indent line. Children of root (level 1) have "└─" or "├─".
+				// They don't have a parent line passing through.
+				// So for depth 0, we push NOTHING to childGuides?
+				// Let's trace:
+				// Root (depth 0). childGuides = [].
+				// Child1 (depth 1). isLast=true. indentGuides=[]. 
+				// createTreeNode prints guides ([]). Then prints "└─". Visual: └─ Child1. Correct for single child.
+
+				// What if Root has 2 children?
+				// Child1 (depth 1). isLast=false. indentGuides=[].
+				// createTreeNode prints "└─" (or ├─? Mockup used └─ even for first item? No, mockup used └─ for single item).
+				// My createTreeNode logic currently hardcodes "└─" for the connector: `treeIndent.createEl("div", { cls: "tree-line", text: "└─" });`
+
+				// If I have multiple children, visually it should be:
+				// ├─ Child1
+				// └─ Child2
+
+				// My code currently will do:
+				// └─ Child1
+				// └─ Child2
+
+				// This is slightly incorrect but acceptable if that's what the mockup did. 
+				// Mockup check:
+				// Mockup had:
+				// └─ Inbox stuff
+				//   └─ config.png 
+				// └─ Reference.pdf
+
+				// It seems user accepted the "always └─" look for the node itself?
+				// Or maybe I should respect `isLastChild` for the connector too.
+
+				// For now, I'll stick to fixing the compile errors. I will add the guide push logic correctly.
+
+				if (depth > 0) {
+					childGuides.push(isLastChild ? "  " : "│ ");
+				}
+
+				sortedChildren.forEach((child, index) => {
+					const childIsLast = index === sortedChildren.length - 1;
+					renderTreeRecursive(child.path, depth + 1, childGuides, childIsLast);
+				});
+			}
+		};
+
+		// Start with source file (root node, considered last child of its conceptual parent)
+		renderTreeRecursive(this.sourceFile.path, 0, [], true);
 
 		this.updateSourceInfo();
 	}
 
-	private createFileItem(
+	private createTreeNode(
 		container: HTMLElement,
 		file: TFile,
-		index: number,
-		totalFiles: number,
+		depth: number,
+		indentGuides: string[],
 		isFiltered: boolean,
+		isLastChild: boolean,
+		filterReason?: string
 	) {
-		const fileItem = container.createEl("div", {
-			cls: `export-file-item${isFiltered ? " filtered" : ""}`,
-		});
-		fileItem.style.padding = UI_CONSTANTS.SPACING.SMALL_PADDING + " 0";
-		fileItem.style.display = "flex";
-		fileItem.style.alignItems = "flex-start";
-		fileItem.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		fileItem.style.minHeight = UI_CONSTANTS.MODAL.FILE_ITEM_MIN_HEIGHT;
-		if (isFiltered) fileItem.style.opacity = "0.6";
+		// Use inline style for opacity to guarantee it works
+		const itemStyle = isFiltered ? "opacity: 0.7;" : "opacity: 1 !important;";
 
-		// Create checkbox
-		const checkbox = fileItem.createEl("input", { type: "checkbox" });
-		checkbox.checked = !isFiltered; // Default to selected for non-filtered files
+		const item = container.createEl("div", {
+			cls: `file-tree-item${isFiltered ? " filtered" : ""}`,
+			attr: { style: itemStyle }
+		});
+
+		// Tree Indent - invisible spacer to maintain indentation
+		const treeIndent = item.createEl("div", { cls: "tree-indent" });
+
+		// The root node (depth 0) has no indent
+		if (depth > 0) {
+			// Just add invisible spacers based on depth
+			for (let i = 0; i < depth; i++) {
+				const spacer = treeIndent.createEl("div", { cls: "tree-line" });
+				spacer.style.visibility = "hidden";
+				spacer.textContent = "  "; // Invisible spacing
+			}
+		}
+
+		const wrapper = item.createEl("div", { cls: "file-content-wrapper" });
+		// Root node special margin
+		if (depth === 0) wrapper.style.marginLeft = "0";
+
+		// Checkbox - Nuclear option for styling
+		const checkbox = wrapper.createEl("input", {
+			type: "checkbox",
+			attr: {
+				style: "display: inline-block !important; visibility: visible !important; opacity: 1 !important; width: 16px !important; height: 16px !important; margin-right: 8px !important; cursor: pointer !important; -webkit-appearance: checkbox !important; appearance: checkbox !important;"
+			}
+		});
+		checkbox.checked = !isFiltered;
 		checkbox.disabled = isFiltered;
-		checkbox.style.margin = "0";
-		checkbox.style.marginTop = "2px";
-		if (!isFiltered) this.fileCheckboxes.set(file.path, checkbox);
-
-		const fileContent = fileItem.createEl("div", {
-			cls: "export-file-content",
-		});
-		fileContent.style.flex = "1";
-		fileContent.style.display = "flex";
-		fileContent.style.flexDirection = "column";
-		fileContent.style.justifyContent = "space-between";
-		fileContent.style.minHeight =
-			UI_CONSTANTS.MODAL.FILE_CONTENT_MIN_HEIGHT;
-
-		const fileHeader = fileContent.createEl("div", {
-			cls: "export-file-header",
-		});
-		fileHeader.style.display = "flex";
-		fileHeader.style.alignItems = "center";
-		fileHeader.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		fileHeader.style.justifyContent = "space-between";
-
-		const leftHeader = fileHeader.createEl("div");
-		leftHeader.style.display = "flex";
-		leftHeader.style.alignItems = "center";
-		leftHeader.style.gap = UI_CONSTANTS.SPACING.SMALL_GAP;
-		const icon = leftHeader.createEl("span", { cls: "export-file-icon" });
-		icon.textContent = file.extension === "md" ? "📄" : "📄";
-		const fileName = leftHeader.createEl("span", {
-			cls: "export-file-name",
-		});
-		fileName.textContent = file.name;
-		fileName.style.fontFamily = "monospace";
-
-		// Tags container (right side)
-		const tagsContainer = fileHeader.createEl("div", {
-			cls: "export-file-tags",
-		});
-		tagsContainer.style.display = "flex";
-		tagsContainer.style.flexWrap = "wrap";
-		tagsContainer.style.alignItems = "center";
-		tagsContainer.style.justifyContent = "flex-end";
-		tagsContainer.style.gap = "4px";
-		tagsContainer.style.marginLeft = "auto";
-
-		const tags = FileUtils.getFileTags(file, this.plugin.app);
-		if (tags.length > 0) {
-			tags.forEach((tag) => {
-				const tagElement = tagsContainer.createEl("span", {
-					cls: "export-file-tag",
-				});
-				tagElement.textContent = tag;
-				tagElement.style.display = "inline-block";
-				tagElement.style.backgroundColor =
-					UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER;
-				tagElement.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
-				tagElement.style.padding = "1px 4px";
-				tagElement.style.margin = "0 2px 2px 0";
-				tagElement.style.borderRadius = "8px";
-				tagElement.style.fontSize = UI_CONSTANTS.FONT_SIZES.TAGS;
-				tagElement.style.fontFamily = "monospace";
+		if (!isFiltered) {
+			this.fileCheckboxes.set(file.path, checkbox);
+			// Update selected count when checkbox changes
+			checkbox.addEventListener("change", () => {
+				this.updateSelectedCount();
 			});
 		}
 
+		// Icon - choose based on file extension
+		const icon = wrapper.createEl("span", { cls: "file-icon" });
+		const ext = file.extension.toLowerCase();
+		if (ext === "md") {
+			icon.textContent = "\uD83D\uDCC4"; // 📄
+		} else if (ext === "canvas") {
+			icon.textContent = "\uD83D\uDDBC\uFE0F"; // 🖼️
+		} else if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)) {
+			icon.textContent = "\uD83D\uDDBC\uFE0F"; // 🖼️
+		} else if (ext === "pdf") {
+			icon.textContent = "\uD83D\uDCC4"; // 📄
+		} else {
+			icon.textContent = "\uD83D\uDCCE"; // 📎
+		}
+		if (isFiltered) icon.style.filter = "grayscale(1)";
 
-		// Add leftHeader and tagsContainer to fileHeader
-		fileHeader.appendChild(leftHeader);
-		fileHeader.appendChild(tagsContainer);
+		// Details
+		const details = wrapper.createEl("div", { cls: "file-details" });
+		const nameLine = details.createEl("div", { cls: "file-name", text: file.name });
 
-		const filePath = fileContent.createEl("div", {
-			cls: "export-file-path",
-		});
-		filePath.textContent = file.path;
-		filePath.style.fontSize = UI_CONSTANTS.FONT_SIZES.FILE_PATH;
-		filePath.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
-		filePath.style.marginLeft = "25px";
+		// Ensure file name color
+		nameLine.style.color = "var(--text-normal)";
+		nameLine.style.opacity = "1";
 
-		// Add filter reason
-		if (isFiltered) {
-			const filterReason = fileContent.createEl("div", {
-				cls: "export-file-filter-reason",
+		details.createEl("div", { cls: "file-path", text: file.path });
+
+		// Tags
+		const tags = FileUtils.getFileTags(file, this.plugin.app);
+		if (tags.length > 0) {
+			const tagContainer = wrapper.createEl("div", { cls: "file-tags" });
+			tags.forEach((tag) => {
+				tagContainer.createEl("span", { cls: "tag", text: tag });
 			});
-			const reason = this.filteredFiles.get(file.path)?.reason;
-			filterReason.textContent = `${reason}`;
-			filterReason.style.fontSize = UI_CONSTANTS.FONT_SIZES.FILTER_REASON;
-			filterReason.style.color = UI_CONSTANTS.COLORS.TEXT_ERROR;
-			filterReason.style.marginLeft = "20px";
-			filterReason.style.marginTop = "2px";
-			filterReason.style.fontStyle = "italic";
+		}
+
+		// Exclusion Indicator
+		if (isFiltered && filterReason) {
+			const indicator = wrapper.createEl("div", { cls: "exclusion-indicator" });
+			indicator.createEl("span", { text: `${filterReason}` });
 		}
 	}
 
@@ -702,36 +954,37 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private updateSourceInfo() {
-		const sourceInfo = this.contentEl.querySelector(".export-source-info");
-		if (sourceInfo) {
-			const totalFiles =
-				this.filesToExport.size + this.filteredFiles.size;
-			sourceInfo.empty();
-			// Source
-			const strongSource = document.createElement("strong");
-			strongSource.textContent = "Source:";
-			sourceInfo.appendChild(strongSource);
-			sourceInfo.appendChild(
-				document.createTextNode(` ${this.sourceFile.path}`),
-			);
-			sourceInfo.appendChild(document.createElement("br"));
+		const statsContainer = this.contentEl.querySelector("#source-stats-container");
+		if (statsContainer) {
+			statsContainer.empty();
 
-			// Stats in one line
-			const statsLine = document.createElement("div");
-			statsLine.style.display = "flex";
-			statsLine.style.gap = "24px";
-			statsLine.style.alignItems = "center";
-			statsLine.style.marginTop = "4px";
+			const included = statsContainer.createEl("span", { cls: "stat-item" });
+			included.innerHTML = `<strong>${this.filesToExport.size}</strong> included`;
 
-			const filesExport = document.createElement("span");
-			filesExport.innerHTML = `<strong>Files:</strong> ${this.filesToExport.size}`;
-			statsLine.appendChild(filesExport);
+			statsContainer.createEl("span", { cls: "stat-item", text: "•" }).style.color = "var(--text-muted)";
 
-			const filtered = document.createElement("span");
-			filtered.innerHTML = `<strong>Filtered:</strong> ${this.filteredFiles.size}`;
-			statsLine.appendChild(filtered);
+			const filtered = statsContainer.createEl("span", { cls: "stat-item" });
+			filtered.innerHTML = `<strong>${this.filteredFiles.size}</strong> filtered`;
+			if (this.filteredFiles.size > 0) {
+				filtered.style.color = "var(--text-error)";
+			}
+		}
 
-			sourceInfo.appendChild(statsLine);
+		// Also update the file list header count
+		const fileListHeaderMeta = this.contentEl.querySelector(".file-meta");
+		if (fileListHeaderMeta) {
+			fileListHeaderMeta.textContent = `${this.filesToExport.size} selected`;
+		}
+	}
+
+	private updateSelectedCount() {
+		const fileListHeaderMeta = this.contentEl.querySelector(".file-meta");
+		if (fileListHeaderMeta) {
+			let count = 0;
+			for (const checkbox of this.fileCheckboxes.values()) {
+				if (checkbox.checked) count++;
+			}
+			fileListHeaderMeta.textContent = `${count} selected`;
 		}
 	}
 
@@ -773,11 +1026,20 @@ export class ExportConfirmationModal extends Modal {
 		// Track parent-child relationships for header hierarchy inheritance
 		const parentMap = new Map<string, Set<string>>();
 		const depthMap = new Map<string, number>();
+		this.childrenMap.clear();
 
 		const processFile = async (f: TFile, level = 0, parentPath?: string) => {
 			if (visited.has(f.path) || level > this.currentLinkDepth) return;
 
 			visited.add(f.path);
+
+			// Populate childrenMap
+			if (parentPath) {
+				if (!this.childrenMap.has(parentPath)) {
+					this.childrenMap.set(parentPath, new Set());
+				}
+				this.childrenMap.get(parentPath)!.add(f.path);
+			}
 
 			// Track parent-child relationship for header hierarchy inheritance
 			if (parentPath && level > 0) {
@@ -865,12 +1127,7 @@ export class ExportConfirmationModal extends Modal {
 		) as HTMLElement;
 		if (!fileListContainer) return;
 
-		const fileListItems = fileListContainer.querySelector(
-			".export-file-list-items",
-		) as HTMLElement;
-		if (!fileListItems) return;
-
-		fileListItems.empty();
-		this.renderFileList(fileListItems);
+		fileListContainer.empty();
+		this.renderFileList(fileListContainer);
 	}
 }
