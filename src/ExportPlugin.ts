@@ -30,7 +30,7 @@ export default class ExportPlugin extends Plugin {
 			this.app.workspace.on("file-menu", (menu: Menu, file: TFile) => {
 				if (file.extension === "md" || file.extension === "canvas") {
 					menu.addItem((item) => {
-						item.setTitle("Export with linked notes")
+						item.setTitle("Export note & related files")
 							.setIcon("download")
 							.onClick(async () => {
 								await this.handleExportRequest(file);
@@ -43,7 +43,7 @@ export default class ExportPlugin extends Plugin {
 		// Add command palette command
 		this.addCommand({
 			id: "export-current-file-with-links",
-			name: "Export current file with linked notes",
+			name: "Export note & related files",
 			callback: async () => {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (activeFile && activeFile.extension === "md") {

@@ -84,7 +84,7 @@ export class ExportConfirmationModal extends Modal {
 
 	private createHeader() {
 		const header = this.contentEl.createEl("h2", {
-			text: "Export Confirmation",
+			text: "Export Options",
 		});
 		header.style.textAlign = "center";
 		header.style.fontSize = UI_CONSTANTS.FONT_SIZES.HEADER;
@@ -96,7 +96,7 @@ export class ExportConfirmationModal extends Modal {
 		});
 		sourceInfo.empty();
 
-		sourceInfo.createEl("strong", { text: "Source: " });
+		sourceInfo.createEl("strong", { text: "Exporting Note: " });
 		sourceInfo.createEl("span", { text: this.sourceFile.path });
 		sourceInfo.createEl("br");
 
@@ -126,7 +126,7 @@ export class ExportConfirmationModal extends Modal {
 		icon.style.marginRight = "6px";
 		icon.style.transition = "transform 0.2s ease";
 
-		heading.createEl("span", { text: "Export settings" });
+		heading.createEl("span", { text: "Configure Export" });
 
 		// --- Content ---
 		const content = section.createEl("div", { cls: "export-settings-content" });
@@ -166,8 +166,9 @@ export class ExportConfirmationModal extends Modal {
 		labelCol.style.display = "flex";
 		labelCol.style.alignItems = "center";
 		const linkDepthLabel = labelCol.createEl("label", {
-			text: "Link depth:",
+			text: "Linked notes:",
 		});
+		linkDepthLabel.title = "How deep should we follow links?";
 		linkDepthLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
 		linkDepthLabel.style.marginBottom = "0";
 
@@ -235,7 +236,7 @@ export class ExportConfirmationModal extends Modal {
 		labelCol.style.display = "flex";
 		labelCol.style.alignItems = "center";
 		const ignoreFoldersLabel = labelCol.createEl("label", {
-			text: "Ignore folder:",
+			text: "Folders to skip:",
 		});
 		ignoreFoldersLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
 		ignoreFoldersLabel.style.marginBottom = "0";
@@ -247,7 +248,7 @@ export class ExportConfirmationModal extends Modal {
 		this.ignoreFoldersInput = inputCol.createEl("input", {
 			type: "text",
 		});
-		this.ignoreFoldersInput.placeholder = "e.g. Templates, Archive";
+		this.ignoreFoldersInput.placeholder = "e.g. Templates, Archive (comma separated)";
 		this.ignoreFoldersInput.value =
 			this.plugin.settings.ignoreFolders.join(", ");
 		this.ignoreFoldersInput.style.width = "100%";
@@ -278,7 +279,7 @@ export class ExportConfirmationModal extends Modal {
 		labelCol.style.display = "flex";
 		labelCol.style.alignItems = "center";
 		const ignoreTagsLabel = labelCol.createEl("label", {
-			text: "Ignore tags:",
+			text: "Tags to skip:",
 		});
 		ignoreTagsLabel.style.fontSize = UI_CONSTANTS.FONT_SIZES.LABELS;
 		ignoreTagsLabel.style.marginBottom = "0";
@@ -391,7 +392,7 @@ export class ExportConfirmationModal extends Modal {
 			this.defaultkeepFolderStructureSetting;
 		this.keepFolderStructureToggle.style.margin = "0";
 		const dirToggleText = dirLabel.createEl("span");
-		dirToggleText.createEl("strong", { text: "Keep folder structure" });
+		dirToggleText.createEl("strong", { text: "Maintain Vault Folders" });
 
 		// Mutual exclusivity: when Keep folder structure is checked, uncheck Use header hierarchy
 		this.keepFolderStructureToggle.addEventListener("change", () => {
@@ -429,7 +430,7 @@ export class ExportConfirmationModal extends Modal {
 		this.useHeaderHierarchyToggle.checked = this.defaultUseHeaderHierarchy;
 		this.useHeaderHierarchyToggle.style.margin = "0";
 		const headerToggleText = headerLabel.createEl("span");
-		headerToggleText.createEl("strong", { text: "Use header hierarchy" });
+		headerToggleText.createEl("strong", { text: "Organize by Headers" });
 
 		// Rebuild header map when toggle changes
 		this.useHeaderHierarchyToggle.addEventListener("change", async () => {
