@@ -19,9 +19,9 @@ export class ExportSettingsTab extends PluginSettingTab {
 
 		// Link Depth Setting
 		new Setting(containerEl)
-			.setName("Default Link Depth")
+			.setName("Linked Notes Depth")
 			.setDesc(
-				"How many levels of linked files to include in exports. 0 = only source file, 1 = source + directly linked files, etc.",
+				"How deep should we follow links? 0 = only the note + dependencies. 1 = immediate linked notes. 2 = links of links.",
 			)
 			.addSlider((slider) =>
 				slider
@@ -36,9 +36,9 @@ export class ExportSettingsTab extends PluginSettingTab {
 
 		// ZIP Output Setting
 		new Setting(containerEl)
-			.setName("Default ZIP Output")
+			.setName("Create ZIP Archive")
 			.setDesc(
-				"Whether to create a ZIP archive by default when exporting files",
+				"Automatically compress the exported files into a single .zip file?",
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -51,9 +51,9 @@ export class ExportSettingsTab extends PluginSettingTab {
 
 		// Keep Directory Structure Setting
 		new Setting(containerEl)
-			.setName("Default Keep Folder Structure")
+			.setName("Maintain Vault Folders")
 			.setDesc(
-				"Whether to keep folder structure by default when exporting files (ZIP and regular exports). Note: This is mutually exclusive with 'Use Header Hierarchy'.",
+				"Preserve the original folder structure from your vault. (e.g. 'Project/Notes/Note.md' stays in that folder).",
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -71,9 +71,9 @@ export class ExportSettingsTab extends PluginSettingTab {
 
 		// Use Header Hierarchy Setting
 		new Setting(containerEl)
-			.setName("Default Use Header Hierarchy")
+			.setName("Organize by Headers")
 			.setDesc(
-				"Organize exported files according to header structure in the source note. Headers become directories, and linked notes are placed under their respective header sections. Note: This is mutually exclusive with 'Keep Folder Structure'.",
+				"Create folders based on your note's headers (H1, H2, etc.) and place linked notes inside them. Useful for structured exports.",
 			)
 			.addToggle((toggle) =>
 				toggle
@@ -91,9 +91,9 @@ export class ExportSettingsTab extends PluginSettingTab {
 
 		// Ignore Folders Setting
 		new Setting(containerEl)
-			.setName("Ignore Folders")
+			.setName("Folders to skip")
 			.setDesc(
-				"Comma-separated list of folder paths to exclude from exports (e.g., 'Templates, Archive')",
+				"Notes in these folders will be skipped (comma separated, e.g., 'Templates, Archive').",
 			)
 			.addText((text) =>
 				text
@@ -110,9 +110,9 @@ export class ExportSettingsTab extends PluginSettingTab {
 
 		// Ignore Tags Setting
 		new Setting(containerEl)
-			.setName("Ignore Tags")
+			.setName("Tags to skip")
 			.setDesc(
-				"Comma-separated list of tags to exclude from exports. Use 'tag/*' to ignore all subtags (e.g., '#draft, #personal/*')",
+				"Notes with these tags will be skipped (comma separated). Use 'tag/*' for subtags.",
 			)
 			.addText((text) =>
 				text
@@ -130,7 +130,7 @@ export class ExportSettingsTab extends PluginSettingTab {
 		// Reset to Defaults Button
 		new Setting(containerEl)
 			.setName("Reset to Defaults")
-			.setDesc("Reset all settings to their default values")
+			.setDesc("Restore original settings.")
 			.addButton((button) =>
 				button
 					.setButtonText("Reset")

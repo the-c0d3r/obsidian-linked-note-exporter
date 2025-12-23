@@ -1,163 +1,70 @@
 # Linked Note Exporter
 
-Export a note along with all its attachments and linked notes—cleanly, conveniently, and outside your vault so you can share it with others.
+Export a note along with all its attachments and linked notes—cleanly, conveniently, and ready to share.
 
-## ✨ Features
+## 🚀 Why use this?
 
--   Export a note to a directory outside your vault
--   Include all embedded/linked files (images, PDFs, etc.)
--   **Canvas Support**: Exports files linked in Canvas and links inside text nodes
--   **Link Support**: Handles both **WikiLinks** `[[Link]]` and **Markdown Links** `[Link](path.md)`
--   Include notes linked from the source note, up to configurable link depth
--   Organize exported files by document header structure (H2, H3, etc.)
--   Optionally zip the export
--   Exclude notes by folder or tag
--   Trigger from the **right-click context menu** or **command palette**
+You’ve crafted a beautiful note with images and cross-links—but sharing it deals a blow to its utility: links break, and images vanish. 
 
-## 🛠️ Use Case
+**Linked Note Exporter** solves this by gathering everything your note needs (images, PDFs, and even other notes it links to) and packaging them into a folder or ZIP file. It's the easiest way to share a complete piece of your "second brain" with someone else.
 
-You’ve crafted a beautiful note with images and cross-links—but sharing it with a colleague becomes a tangled mess of missing files and broken links. This plugin solves that elegantly by exporting a self-contained bundle of everything related to that note.
+## ✨ What it does
 
-## 🖼️ Screenshots
+-   **Exports complete packages**: Copies your note and every image or file embedded in it.
+-   **Follows your thoughts**: Can optionally grab the notes you linked to (and the notes *they* link to!).
+-   **Canvas Friendly**: Fully supports Obsidian Canvas files.
+-   **Smart Organization**: Keeps your files tidy, either matching your vault or organizing by your document's headers.
+-   **Ready to Share**: Can zip everything up automatically.
+-   **Flexible**: Works with both `[[WikiLinks]]` and standard `[Markdown Links](path.md)`.
+
+## 🖼️ See it in action
+
+![demo](assets/demo.png)
+
 ![demo](assets/demo.gif)
-
-![Export Modal](assets/export-modal.png)
-
-![Configuration options](assets/config.png)
-
-
-## ⚙️ Settings
-
-### `Link Depth`
-
--   Determines how many levels of linked notes are exported.
--   `1` includes directly linked notes.
--   `2` includes notes linked by those notes, and so on.
-
-### `Zip Export`
-
--   If enabled, the exported files will be zipped into `export.zip` inside the target directory.
-
-### `Keep Folder Structure`
-
--   If enabled, the export files or zip will maintain the same directory structure as the original file path.
--   **Note**: This is mutually exclusive with `Use Header Hierarchy`.
-
-### `Use Header Hierarchy`
-
--   If enabled, exported files are organized by the header structure of the source note.
--   Headers (H2, H3, H4, etc.) become directories, and linked notes are placed under their respective header sections.
--   Creates a clear, semantic folder structure that mirrors your document's outline.
-
-#### Example
-
-**Source Note** (`Project Overview.md`):
-```markdown
-# Project Overview
-
-## Research
-- [[Literature Review]]
-- [[Data Sources]]
-
-## Implementation
-### Backend
-- [[API Design]]
-- [[Database Schema]]
-
-### Frontend
-- [[UI Components]]
-```
-
-**Exported Structure**:
-```
-Project Overview/
-├── Research/
-│   ├── Literature Review.md
-│   └── Data Sources.md
-└── Implementation/
-    ├── Backend/
-    │   ├── API Design.md
-    │   └── Database Schema.md
-    └── Frontend/
-        └── UI Components.md
-```
-
-### `Ignore Folders`
-
--   Notes located in these folders will be skipped during export.
--   Useful for ignoring private, work-related, or archival material.
-
-### `Ignore Tags`
-
--   Notes with these tags will be skipped.
--   Supports wildcards:
-    -   `#personal/*` excludes tags like `#personal/notes`, `#personal/thoughts`, etc. This also excludes `#personal`.
-    -   `#private` by itself excludes that tag only.
-
-## 🔗 Link Resolution
-
-The plugin is smart enough to handle all 3 of Obsidian's link resolution strategies:
-
-1.  **Shortest path**: Matches the file with the shortest path (e.g. `[[Note]]` matches `Folder/Note.md`).
-2.  **Relative path**: Resolves links relative to the current file.
-3.  **Absolute path**: Resolves links from the root of the vault.
-
-It also seamlessly supports mixed usage of **WikiLinks** and standard **Markdown Links** in the same document.
-
-## 🎨 Canvas Support
-
-Obsidian Canvas files (`.canvas`) are fully supported. The plugin will export:
--   Files directly added to the canvas.
--   Links inside text cards on the canvas.
-
 
 ## 🧭 How to Use
 
--   **Right-Click Export**: Right-click any markdown file in the file explorer → `Export with Linked Content`
--   **Command Palette**: Trigger `Export Note with Linked Files`
+1.  **Right-click** any note in your file explorer.
+2.  Select **Export note & related files**.
+3.  Choose your settings (or stick to the defaults!) and click **Export**.
 
-## 🧪 Install from community plugin list
+_You can also use the Command Palette: search for "Export note & related files"._
 
-1. Open Settings.
-2. Select Turn on community plugins.
-3. Select Browse to list all available community plugins.
-4. Search for "Linked Note Exporter" and click install.
-5. Enable the plugin from the Community Plugins list.
+## ⚙️ Settings Explained
 
-## 📁 Export Output
+### `Linked Notes Depth`
+*How deep should we look for connections?*
+-   `0`: Just the note and its images/attachments.
+-   `1`: The note + immediate linked notes.
+-   `2`: The note + linked notes + notes linked by *those* notes.
 
--   All selected notes and attachments will be copied to your chosen directory
--   Internal links are updated to ensure integrity
--   Optionally zipped if the setting is enabled
+### `Create ZIP Archive`
+If turned on, we'll compress your export into a single `.zip` file. Perfect for emailing!
 
-### Export Modes
+### `Maintain Vault Folders`
+Keeps the file structure exactly as it is in your Obsidian vault. If `Notes/Project A/Note.md` is exported, it will be in the same folder path in the export.
 
-The plugin offers three ways to organize your exported files:
+### `Organize by Headers`
+A powerful alternative to "Maintain Vault Folders". This moves linked notes into folders based on where they appear in your document.
+*   If you have a header `## Research`, any notes linked under that header will be moved into a `Research` folder in your export.
+*   Great for turning a note into a structured bundle of documents.
 
-1. **Flat Export** (default): All files in a single directory
-2. **Vault Structure**: Preserves the original folder hierarchy from your vault
-3. **Header Hierarchy**: Organizes files by the document's header structure (H2, H3, etc.)
+### `Ignore Folders & Tags`
+Tell the exporter what to skip.
+-   **Ignore Folders**: e.g. `Templates, Archive` — notes in these folders won't be exported.
+-   **Ignore Tags**: e.g. `#private` or `#personal/*` — notes with these tags will be left behind.
 
-Choose the mode that best fits your sharing or archival needs.
+## 🧪 Installation
 
-## 📌 Roadmap / TODO
+1.  Open **Settings** > **Community Plugins**.
+2.  Turn on Community Plugins.
+3.  Browse and search for **"Linked Note Exporter"**.
+4.  Install and Enable.
 
--   More link handling options (e.g., block links)
--   CLI integration (?)
+## 📄 License & Support
 
-## 🧑‍💻 Author
+MIT License.
 
-Crafted by someone who just wanted exporting notes to _work_.
-Use it, fork it, improve it.
-
-## 📄 License
-
-This plugin is released under the MIT License.
-
-## ☕ Support This Plugin
-
-If this plugin saved you some time—or your sanity—you can buy me a coffee:
-
-<https://buymeacoffee.com/the.c0d3r>
-
-Your support helps keep the keyboard clicking and the plugins flowing.
+If this plugin saved you time (or sanity), consider [buying me a coffee](https://buymeacoffee.com/the.c0d3r). 
+Your support keeps the updates coming!
