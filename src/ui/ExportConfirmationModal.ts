@@ -788,41 +788,6 @@ export class ExportConfirmationModal extends Modal {
 
 				// Prepare guides for children
 				const childGuides = [...indentGuides];
-				// Add a guide for the current level.
-				// If we are not at root (depth 0), we add a guide segment.
-				// If we are root, we don't start shifting yet for our children?
-				// Actually, root has no indent line. Children of root (level 1) have "└─" or "├─".
-				// They don't have a parent line passing through.
-				// So for depth 0, we push NOTHING to childGuides?
-				// Let's trace:
-				// Root (depth 0). childGuides = [].
-				// Child1 (depth 1). isLast=true. indentGuides=[]. 
-				// createTreeNode prints guides ([]). Then prints "└─". Visual: └─ Child1. Correct for single child.
-
-				// What if Root has 2 children?
-				// Child1 (depth 1). isLast=false. indentGuides=[].
-				// createTreeNode prints "└─" (or ├─? Mockup used └─ even for first item? No, mockup used └─ for single item).
-				// My createTreeNode logic currently hardcodes "└─" for the connector: `treeIndent.createEl("div", { cls: "tree-line", text: "└─" });`
-
-				// If I have multiple children, visually it should be:
-				// ├─ Child1
-				// └─ Child2
-
-				// My code currently will do:
-				// └─ Child1
-				// └─ Child2
-
-				// This is slightly incorrect but acceptable if that's what the mockup did. 
-				// Mockup check:
-				// Mockup had:
-				// └─ Inbox stuff
-				//   └─ config.png 
-				// └─ Reference.pdf
-
-				// It seems user accepted the "always └─" look for the node itself?
-				// Or maybe I should respect `isLastChild` for the connector too.
-
-				// For now, I'll stick to fixing the compile errors. I will add the guide push logic correctly.
 
 				if (depth > 0) {
 					childGuides.push(isLastChild ? "  " : "│ ");
@@ -949,24 +914,7 @@ export class ExportConfirmationModal extends Modal {
 		// No separate exclusion indicator - matching is shown inline
 	}
 
-	private addFilteredFilesSeparator(
-		container: HTMLElement,
-		hasExportableFiles: boolean,
-	) {
-		if (hasExportableFiles) {
-			const separator = container.createEl("div", {
-				cls: "export-file-separator",
-			});
-			separator.style.borderTop = `2px solid ${UI_CONSTANTS.COLORS.BACKGROUND_MODIFIER_BORDER}`;
-			separator.style.margin = UI_CONSTANTS.SPACING.SMALL_MARGIN + " 0";
-			separator.style.padding = UI_CONSTANTS.SPACING.SMALL_MARGIN + " 0";
-			const em = document.createElement("em");
-			em.textContent = "Filtered files:";
-			separator.appendChild(em);
-			separator.style.color = UI_CONSTANTS.COLORS.TEXT_MUTED;
-			separator.style.fontSize = UI_CONSTANTS.FONT_SIZES.IGNORE_TITLE;
-		}
-	}
+
 
 	private updateSourceInfo() {
 		const statsContainer = this.contentEl.querySelector("#source-stats-container");
@@ -1132,17 +1080,13 @@ export class ExportConfirmationModal extends Modal {
 			this.headerMap = new Map();
 		}
 
-		// Refresh the file list display
-		this.refreshFileList();
-	}
-
-	private refreshFileList() {
+		// Refresh the file list display inline
 		const fileListContainer = this.contentEl.querySelector(
 			".export-file-list",
 		) as HTMLElement;
-		if (!fileListContainer) return;
-
-		fileListContainer.empty();
-		this.renderFileList(fileListContainer);
+		if (fileListContainer) {
+			fileListContainer.empty();
+			this.renderFileList(fileListContainer);
+		}
 	}
 }
