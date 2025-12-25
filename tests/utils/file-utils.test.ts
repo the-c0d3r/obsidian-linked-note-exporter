@@ -21,6 +21,18 @@ describe('FileUtils', () => {
             expect(result).toEqual(['Note 1']);
         });
 
+        it('should handle WikiLink anchors correctly', () => {
+            const content = '[[Note#Section]]';
+            const result = FileUtils.getLinkedPaths(content);
+            expect(result).toEqual(['Note']);
+        });
+
+        it('should handle WikiLink anchors with formatting and aliases', () => {
+            const content = '[[Procedural type of info#**Definition**|Procedural]]';
+            const result = FileUtils.getLinkedPaths(content);
+            expect(result).toEqual(['Procedural type of info']);
+        });
+
         it('should handle PDF links with fragments correctly', () => {
             const content = '[[Document.pdf#page=1]]';
             const result = FileUtils.getLinkedPaths(content);
@@ -240,12 +252,18 @@ describe('isPathIgnored', () => {
 });
 
 describe('extractLinksFromContent', () => {
-    it('should extract link text and position', () => {
+    it('should extract correct link text and position', () => {
         const content = 'Start [[Link]] End';
         const result = FileUtils.extractLinksFromContent(content);
         expect(result).toHaveLength(1);
         expect(result[0].linkText).toBe('Link');
         expect(result[0].position).toBe(6);
+    });
+
+    it('should handle WikiLink anchors in extractLinksFromContent', () => {
+        const content = '[[Note#Section]]';
+        const result = FileUtils.extractLinksFromContent(content);
+        expect(result[0].linkText).toBe('Note');
     });
 
     it('should handle multiple links', () => {
@@ -267,6 +285,12 @@ describe('extractLinksFromContent', () => {
         const result = FileUtils.extractLinksFromContent(content);
         expect(result).toHaveLength(1);
         expect(result[0].linkText).toBe('File.md');
+    });
+
+    it('should handle standard markdown link anchors in extractLinksFromContent', () => {
+        const content = '[Note](Note.md#Section)';
+        const result = FileUtils.extractLinksFromContent(content);
+        expect(result[0].linkText).toBe('Note.md');
     });
 
     it('should extract mixed links sorted by position', () => {
@@ -299,6 +323,12 @@ describe('extractLinksFromContent', () => {
         const content = '[External](https://example.com) and [FTP](ftp://server) and [Custom](ethis://test)';
         const result = FileUtils.getLinkedPaths(content);
         expect(result.length).toBe(0);
+    });
+
+    it('should handle standard markdown link anchors in getLinkedPaths', () => {
+        const content = '[Note](Note.md#Section)';
+        const result = FileUtils.getLinkedPaths(content);
+        expect(result).toContain('Note.md');
     });
 
     it('should ignore local anchors in markdown links', () => {
