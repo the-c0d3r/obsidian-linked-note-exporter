@@ -19,16 +19,9 @@ export class FileUtils {
 		// Process WikiLinks
 		[...mdLinks, ...embeds].forEach((link) => {
 			const clean = link.replace(/!\[\[|\[\[|\]\]/g, "");
-			// For PDF files with fragment identifiers, extract only the filename before #
-			if (clean.toLowerCase().includes(".pdf") && clean.includes("#")) {
-				// Extract filename before the # symbol
-				const fileName = clean.split("#")[0];
-				links.add(fileName);
-			} else {
-				// Regular case - no fragment or not PDF
-				const fileName = clean.split("|")[0];
-				links.add(fileName);
-			}
+			// Extract filename: split by | for alias, then by # for anchor
+			const fileName = clean.split("|")[0].split("#")[0];
+			links.add(fileName);
 		});
 
 		// Process Markdown Links
