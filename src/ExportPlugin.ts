@@ -46,7 +46,7 @@ export default class ExportPlugin extends Plugin {
 			name: "Export note & related files",
 			callback: async () => {
 				const activeFile = this.app.workspace.getActiveFile();
-				if (activeFile && activeFile.extension === "md") {
+				if (activeFile && (activeFile.extension === "md" || activeFile.extension === "canvas")) {
 					await this.handleExportRequest(activeFile);
 				} else {
 					new Notice("Please open a markdown file first.");
