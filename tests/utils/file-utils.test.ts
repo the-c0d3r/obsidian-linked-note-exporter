@@ -39,6 +39,18 @@ describe('FileUtils', () => {
             expect(result).toEqual(['Document.pdf']);
         });
 
+        it('should handle angle bracket syntax for paths with spaces', () => {
+            const content = '![My Image](<../Imgs/image with spaces.png>)';
+            const result = FileUtils.getLinkedPaths(content);
+            expect(result).toEqual(['../Imgs/image with spaces.png']);
+        });
+
+        it('should handle angle bracket syntax for markdown links', () => {
+            const content = '[Link](<path/to/file with spaces.md>)';
+            const result = FileUtils.getLinkedPaths(content);
+            expect(result).toEqual(['path/to/file with spaces.md']);
+        });
+
         it('should return unique paths', () => {
             const content = '[[Note 1]] and [[Note 1]]';
             const result = FileUtils.getLinkedPaths(content);
@@ -306,6 +318,14 @@ describe('extractLinksFromContent', () => {
         const result = FileUtils.extractLinksFromContent(content);
         expect(result).toHaveLength(0);
     });
+
+    it('should handle angle bracket syntax in extractLinksFromContent', () => {
+        const content = '![Image](<path/to/image with spaces.png>)';
+        const result = FileUtils.extractLinksFromContent(content);
+        expect(result).toHaveLength(1);
+        expect(result[0].linkText).toBe('path/to/image with spaces.png');
+    });
+
     it('should extract standard markdown links', () => {
         const content = 'Check [Note 1](Note%201.md) and [Note 2](path/to/Note%202.md)';
         const result = FileUtils.getLinkedPaths(content);

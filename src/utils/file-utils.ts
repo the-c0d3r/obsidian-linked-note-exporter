@@ -11,9 +11,10 @@ export class FileUtils {
 		const embeds = content.match(/!\[\[([^\]]+?)\]\]/g) || [];
 
 		// Match standard markdown links: [text](path) or ![text](path)
-		// Capture group 2 is the path
-		const standardLinks = Array.from(content.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g));
-		const standardEmbeds = Array.from(content.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
+		// Also support angle bracket syntax: [text](<path>) or ![text](<path>)
+		// Capture group 2 is the path (with optional angle brackets)
+		const standardLinks = Array.from(content.matchAll(/\[([^\]]*)\]\(<?([^>)]+)>?\)/g));
+		const standardEmbeds = Array.from(content.matchAll(/!\[([^\]]*)\]\(<?([^>)]+)>?\)/g));
 
 
 		// Process WikiLinks
@@ -94,7 +95,8 @@ export class FileUtils {
 		}
 
 		// Markdown Links: [text](path) or ![text](path)
-		const mdRegex = /!?\[([^\]]*)\]\(([^)]+)\)/g;
+		// Also support angle bracket syntax: [text](<path>) or ![text](<path>)
+		const mdRegex = /!?\[([^\]]*)\]\(<?([^>)]+)>?\)/g;
 		while ((match = mdRegex.exec(content)) !== null) {
 			const path = match[2];
 			// Ignore external links (protocol:// or mailto:)
