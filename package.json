@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-linked-note-exporter",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "Export note with all its attachments and linked notes.",
 	"main": "main.js",
 	"scripts": {
