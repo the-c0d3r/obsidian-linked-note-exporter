@@ -1,7 +1,7 @@
 {
 	"id": "linked-note-exporter",
 	"name": "Linked Note Exporter",
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"minAppVersion": "0.15.0",
 	"description": "Export note with all its attachments and linked notes.",
 	"author": "the-c0d3r",
