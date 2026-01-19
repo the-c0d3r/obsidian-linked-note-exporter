@@ -1,10 +1,11 @@
-import { Modal, TFile, App } from "obsidian";
+import { Modal, TFile, App, Notice } from "obsidian";
 import { ExportModalResult, FilteredFile } from "../types";
 import { UI_CONSTANTS } from "../utils/constants";
 import { FileUtils } from "../utils/file-utils";
 import { injectExportModalStyles } from "./styles/ExportModalStyles";
 import { FileTreeComponent } from "./components/FileTreeComponent";
 import { ExportSettingsSection } from "./components/ExportSettingsSection";
+import { ExportService } from "../utils/export-service";
 
 export class ExportConfirmationModal extends Modal {
 	private resolve: (value: ExportModalResult) => void;
@@ -20,6 +21,7 @@ export class ExportConfirmationModal extends Modal {
 
 	private settingsSection: ExportSettingsSection;
 	private treeComponent: FileTreeComponent;
+	private exportService: ExportService;
 
 	constructor(
 		app: App,
@@ -29,6 +31,7 @@ export class ExportConfirmationModal extends Modal {
 		defaultUseHeaderHierarchy: boolean,
 		resolve: (value: ExportModalResult) => void,
 		plugin: any,
+		exportService: ExportService,
 	) {
 		super(app);
 		this.sourceFile = sourceFile;
@@ -36,6 +39,7 @@ export class ExportConfirmationModal extends Modal {
 		this.filteredFiles = new Map();
 		this.resolve = resolve;
 		this.plugin = plugin;
+		this.exportService = exportService;
 		this.fileCheckboxes = new Map();
 		this.headerMap = new Map();
 		this.parentMap = new Map();
@@ -150,7 +154,25 @@ export class ExportConfirmationModal extends Modal {
 			attr: { style: "background-color: #7c4dff; color: white; border: none;" }
 		});
 
-		exportButton.addEventListener("click", () => {
+		exportButton.addEventListener("click", async () => {
+			// IMPORTANT: showDirectoryPicker must be called directly in the click handler
+			// to preserve the transient user activation context required by the File System Access API.
+			// Moving this call outside the click handler (e.g., after awaiting a modal) causes
+			// DOMException on Windows: "The request is not allowed by the user agent or the platform"
+			let targetDir: FileSystemDirectoryHandle | null = null;
+			try {
+				targetDir = await this.exportService.showDirectoryPicker();
+			} catch (error) {
+				console.error("Directory picker failed:", error);
+				new Notice(`Failed to open directory picker: ${error.message}`, 5000);
+				return; // Don't close modal on error
+			}
+
+			if (!targetDir) {
+				// User cancelled directory selection, keep modal open
+				return;
+			}
+
 			this.resolve({
 				confirmed: true,
 				createZip: this.settingsSection.zipToggle.checked,
@@ -160,7 +182,8 @@ export class ExportConfirmationModal extends Modal {
 				headerMap: this.settingsSection.headerMap,
 				linkDepth: this.settingsSection.currentLinkDepth,
 				ignoreFolders: this.settingsSection.ignoreFoldersInput.value.split(",").map(f => f.trim()).filter(f => f),
-				ignoreTags: this.settingsSection.ignoreTagsInput.value.split(",").map(t => t.trim()).filter(t => t)
+				ignoreTags: this.settingsSection.ignoreTagsInput.value.split(",").map(t => t.trim()).filter(t => t),
+				targetDir,
 			});
 			this.close();
 		});
