@@ -77,22 +77,18 @@ export default class ExportPlugin extends Plugin {
 	private async handleExportRequest(sourceFile: TFile): Promise<void> {
 		try {
 			// Show export confirmation modal
+			// Note: The directory picker is called inside the modal's export button click handler
+			// to preserve the transient user activation context required by the File System Access API.
 			const result = await this.showExportModal(sourceFile);
 
-			if (!result.confirmed) {
+			if (!result.confirmed || !result.targetDir) {
 				return; // User cancelled
-			}
-
-			// Show directory picker
-			const targetDir = await this.exportService.showDirectoryPicker();
-			if (!targetDir) {
-				return; // User cancelled directory selection
 			}
 
 			// Perform the export
 			await this.exportService.exportFiles(
 				result.selectedFiles,
-				targetDir,
+				result.targetDir,
 				result.createZip,
 				result.keepFolderStructure,
 				result.useHeaderHierarchy,
@@ -120,6 +116,7 @@ export default class ExportPlugin extends Plugin {
 				this.settings.useHeaderHierarchy,
 				resolve,
 				this,
+				this.exportService,
 			);
 			modal.open();
 		});

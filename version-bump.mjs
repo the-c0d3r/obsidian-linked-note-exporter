@@ -12,3 +12,8 @@ writeFileSync("manifest.json", JSON.stringify(manifest, null, "\t"));
 let versions = JSON.parse(readFileSync("versions.json", "utf8"));
 versions[targetVersion] = minAppVersion;
 writeFileSync("versions.json", JSON.stringify(versions, null, "\t"));
+
+// update package.json version
+let packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+packageJson.version = targetVersion;
+writeFileSync("package.json", JSON.stringify(packageJson, null, "\t"));

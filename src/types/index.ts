@@ -43,6 +43,7 @@ export interface ExportModalResult {
 	linkDepth: number; // The link depth chosen by the user for linked file traversal
 	ignoreFolders: string[]; // Folder names to exclude from export (user input)
 	ignoreTags: string[]; // Tag patterns to exclude files from export (user input)
+	targetDir?: FileSystemDirectoryHandle; // Directory selected for export (must be picked in user gesture context)
 }
 
 // Filtered File Interface
