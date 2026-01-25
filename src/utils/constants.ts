@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS: ExportPluginSettings = {
 	zipOutput: false,
 	keepFolderStructure: false,
 	useHeaderHierarchy: false,
+	includeBacklinks: false,
 	ignoreFolders: [],
 	ignoreTags: [],
 };

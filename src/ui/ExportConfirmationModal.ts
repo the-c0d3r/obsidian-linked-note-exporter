@@ -18,6 +18,7 @@ export class ExportConfirmationModal extends Modal {
 	private parentMap: Map<string, Set<string>>;
 	private depthMap: Map<string, number>;
 	private childrenMap: Map<string, Set<string>>;
+	private backlinksSet: Set<string> = new Set();
 
 	private settingsSection: ExportSettingsSection;
 	private treeComponent: FileTreeComponent;
@@ -64,6 +65,7 @@ export class ExportConfirmationModal extends Modal {
 			defaultZipSetting: zip,
 			defaultkeepFolderStructureSetting: folders,
 			defaultUseHeaderHierarchy: headers,
+			defaultIncludeBacklinks: plugin.settings.includeBacklinks,
 			filesToExport: this.filesToExport,
 			parentMap: this.parentMap,
 			depthMap: this.depthMap,
@@ -79,6 +81,7 @@ export class ExportConfirmationModal extends Modal {
 			getFilteredFiles: () => this.filteredFiles,
 			getFileCheckboxes: () => this.fileCheckboxes,
 			getChildrenMap: () => this.childrenMap,
+			getBacklinksSet: () => this.backlinksSet,
 			getIgnoreFoldersInput: () => this.settingsSection?.ignoreFoldersInput,
 			getIgnoreTagsInput: () => this.settingsSection?.ignoreTagsInput,
 			updateSelectedCount: this.updateSelectedCount.bind(this),
@@ -279,6 +282,30 @@ export class ExportConfirmationModal extends Modal {
 		};
 
 		await processFile(this.sourceFile);
+
+		// Process backlinks if enabled (1 level only)
+		this.backlinksSet.clear();
+		if (this.settingsSection.includeBacklinksToggle?.checked) {
+			const backlinks = FileUtils.getBacklinks(this.sourceFile, this.plugin.app);
+			for (const backlink of backlinks) {
+				if (!visited.has(backlink.path)) {
+					visited.add(backlink.path);
+
+					const shouldExclude = FileUtils.shouldExcludeFile(backlink, this.plugin.app, ignoreFolders, ignoreTags);
+					if (shouldExclude) {
+						this.filteredFiles.set(backlink.path, { file: backlink, reason: shouldExclude });
+					} else {
+						allFilesToCopy.set(backlink.path, backlink);
+						this.backlinksSet.add(backlink.path);
+						// Add backlinks as children of the source file so they appear in the tree
+						if (!this.childrenMap.has(this.sourceFile.path)) {
+							this.childrenMap.set(this.sourceFile.path, new Set());
+						}
+						this.childrenMap.get(this.sourceFile.path)!.add(backlink.path);
+					}
+				}
+			}
+		}
 
 		// Populate existing maps instead of reassigning them to maintain references
 		this.filesToExport.clear();

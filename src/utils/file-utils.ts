@@ -1,6 +1,29 @@
-import { TFile } from "obsidian";
+import { TFile, App } from "obsidian";
 
 export class FileUtils {
+	/**
+	 * Get all files that link TO the given file (backlinks)
+	 * Uses Obsidian's metadataCache for efficient lookup
+	 */
+	static getBacklinks(file: TFile, app: App): TFile[] {
+		const backlinks: TFile[] = [];
+
+		// Get the backlinks for the file using Obsidian's resolvedLinks
+		// resolvedLinks is a Map<sourcePath, Map<targetPath, count>>
+		const resolvedLinks = app.metadataCache.resolvedLinks;
+
+		for (const [sourcePath, links] of Object.entries(resolvedLinks)) {
+			// Check if this source file links to our target file
+			if (links && links[file.path]) {
+				const sourceFile = app.vault.getAbstractFileByPath(sourcePath);
+				if (sourceFile instanceof TFile) {
+					backlinks.push(sourceFile);
+				}
+			}
+		}
+
+		return backlinks;
+	}
 	/**
 	 * Extract linked file paths from markdown content
 	 */

@@ -579,3 +579,76 @@ describe('buildHeaderHierarchyAsync', () => {
     });
 });
 
+describe('getBacklinks', () => {
+    const targetFile = new TFile();
+    targetFile.path = 'target.md';
+    targetFile.name = 'target.md';
+
+    const backlinkFile = new TFile();
+    backlinkFile.path = 'backlink.md';
+    backlinkFile.name = 'backlink.md';
+
+    const anotherFile = new TFile();
+    anotherFile.path = 'another.md';
+    anotherFile.name = 'another.md';
+
+    it('should return files that link to the given file', () => {
+        const mockApp = {
+            metadataCache: {
+                resolvedLinks: {
+                    'backlink.md': { 'target.md': 1 },
+                    'another.md': { 'other.md': 1 }
+                }
+            },
+            vault: {
+                getAbstractFileByPath: jest.fn((path: string) => {
+                    if (path === 'backlink.md') return backlinkFile;
+                    return null;
+                })
+            }
+        };
+
+        const result = FileUtils.getBacklinks(targetFile, mockApp as any);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBe(backlinkFile);
+    });
+
+    it('should return empty array if no backlinks', () => {
+        const mockApp = {
+            metadataCache: {
+                resolvedLinks: {
+                    'other.md': { 'unrelated.md': 1 }
+                }
+            },
+            vault: {
+                getAbstractFileByPath: jest.fn()
+            }
+        };
+
+        const result = FileUtils.getBacklinks(targetFile, mockApp as any);
+        expect(result).toHaveLength(0);
+    });
+
+    it('should return multiple backlinks', () => {
+        const mockApp = {
+            metadataCache: {
+                resolvedLinks: {
+                    'backlink.md': { 'target.md': 1 },
+                    'another.md': { 'target.md': 2 }
+                }
+            },
+            vault: {
+                getAbstractFileByPath: jest.fn((path: string) => {
+                    if (path === 'backlink.md') return backlinkFile;
+                    if (path === 'another.md') return anotherFile;
+                    return null;
+                })
+            }
+        };
+
+        const result = FileUtils.getBacklinks(targetFile, mockApp as any);
+        expect(result).toHaveLength(2);
+        expect(result).toContain(backlinkFile);
+        expect(result).toContain(anotherFile);
+    });
+});

@@ -9,6 +9,7 @@ export interface FileTreeContext {
     getFilteredFiles: () => Map<string, FilteredFile>;
     getFileCheckboxes: () => Map<string, HTMLInputElement>;
     getChildrenMap: () => Map<string, Set<string>>;
+    getBacklinksSet: () => Set<string>;
     getIgnoreFoldersInput: () => HTMLInputElement;
     getIgnoreTagsInput: () => HTMLInputElement;
     updateSelectedCount: () => void;
@@ -125,10 +126,14 @@ export class FileTreeComponent {
             });
         }
 
-        // Icon - choose based on file extension
+        // Icon - choose based on file extension or backlink status
         const icon = wrapper.createEl("span", { cls: "file-icon" });
         const ext = file.extension.toLowerCase();
-        if (ext === "md") {
+        const isBacklink = this.context.getBacklinksSet().has(file.path);
+
+        if (isBacklink) {
+            icon.textContent = "↩️"; // Backlink indicator
+        } else if (ext === "md") {
             icon.textContent = "\uD83D\uDCC4"; // 📄
         } else if (ext === "canvas") {
             icon.textContent = "\uD83D\uDDBC\uFE0F"; // 🖼️

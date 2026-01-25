@@ -28,6 +28,7 @@ export interface ExportPluginSettings {
 	zipOutput: boolean;
 	keepFolderStructure: boolean; // Whether to maintain directory structure in exports (both ZIP and regular)
 	useHeaderHierarchy: boolean; // Whether to organize files by header structure in source note
+	includeBacklinks: boolean; // Whether to include notes that link TO this note (1 level only)
 	ignoreFolders: string[]; // e.g. ["Templates", "Archive"]
 	ignoreTags: string[]; // e.g. ["#draft", "#private"]
 }
