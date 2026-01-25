@@ -1,70 +1,57 @@
 # Linked Note Exporter
 
-Export a note along with all its attachments and linked notes—cleanly, conveniently, and ready to share.
+This Obsidian plugin helps you share your notes with others.
 
-## 🚀 Why use this?
+When you share a simple markdown file, any attachments like images, PDFs, or links to other notes usually break because the files are missing. This plugin solves that by collecting your note and everything connected to it — any attachments or linked notes — into a single folder or ZIP file.
 
-You’ve crafted a beautiful note with images and cross-links—but sharing it deals a blow to its utility: links break, and images vanish. 
+It's great for sharing a complete topic, project, or idea without losing the context.
 
-**Linked Note Exporter** solves this by gathering everything your note needs (images, PDFs, and even other notes it links to) and packaging them into a folder or ZIP file. It's the easiest way to share a complete piece of your "second brain" with someone else.
+## How to Use
 
-## ✨ What it does
+1.  **Right-click** any note in your file list.
+2.  Choose **Export note & related files**.
+3.  Click **Export**.
 
--   **Exports complete packages**: Copies your note and every image or file embedded in it.
--   **Follows your thoughts**: Can optionally grab the notes you linked to (and the notes *they* link to!).
--   **Canvas Friendly**: Fully supports Obsidian Canvas files.
--   **Smart Organization**: Keeps your files tidy, either matching your vault or organizing by your document's headers.
--   **Ready to Share**: Can zip everything up automatically.
--   **Flexible**: Works with both `[[WikiLinks]]` and standard `[Markdown Links](path.md)`.
-
-## 🖼️ See it in action
+_You can also use the Command Palette: search for "Export note & related files"._
 
 ![demo](assets/demo.png)
 
 ![demo](assets/demo.gif)
 
-## 🧭 How to Use
+## Features
 
-1.  **Right-click** any note in your file explorer.
-2.  Select **Export note & related files**.
-3.  Choose your settings (or stick to the defaults!) and click **Export**.
+*   **Complete Package**: Automatically finds and includes every attachment or linked note you've added to your note.
+*   **Follows Connections**: If your note links to other notes, it can include those too, so the reader gets the full picture.
+*   **Easy Sharing**: Can save everything as a single `.zip` file that you can easily email or send.
+*   **Organized**: Keeps your files tidy. You can choose to keep your original folder structure or organize files based on the headers in your document.
+*   **Flexible**: Works with both `[[WikiLinks]]` and standard `[Markdown Links](path.md)` links.
 
-_You can also use the Command Palette: search for "Export note & related files"._
+## Settings Explained
 
-## ⚙️ Settings Explained
+Here is what the different options do:
 
-### `Linked Notes Depth`
-*How deep should we look for connections?*
--   `0`: Just the note and its images/attachments.
--   `1`: The note + immediate linked notes.
--   `2`: The note + linked notes + notes linked by *those* notes.
+*   **Linked Notes Depth**: How far should we look for connections?
+    *   `0`: Just export this specific note, nothing else, no attachments.
+    *   `1`: Export this note plus any note it links to directly, and any attachments.
+    *   `2`: Also include notes linked by *those* notes (and so on).
+*   **Create ZIP Archive**: Wraps everything into a single file (a ZIP). Best for emailing.
+*   **Maintain Vault Folders**: Keeps the files in the same folders they are in your Vault.
+*   **Organize by Headers**: Moves linked notes into folders named after the section they appear in. For example, if you have a section called "## Research", notes linked there will go into a "Research" folder.
+*   **Include Backlinks**: Also export notes that link *to* this note (the "What links here" notes).
+*   **Ignore Folders/Tags**: Tell the exporter to skip certain files, like your daily journal or private templates.
 
-### `Create ZIP Archive`
-If turned on, we'll compress your export into a single `.zip` file. Perfect for emailing!
+## Installation
 
-### `Maintain Vault Folders`
-Keeps the file structure exactly as it is in your Obsidian vault. If `Notes/Project A/Note.md` is exported, it will be in the same folder path in the export.
+1.  Open Obsidian **Settings**.
+2.  Go to **Community Plugins** and turn off "Restricted mode".
+3.  Click **Browse** and search for `Linked Note Exporter`.
+4.  Click **Install** and then **Enable**.
 
-### `Organize by Headers`
-A powerful alternative to "Maintain Vault Folders". This moves linked notes into folders based on where they appear in your document.
-*   If you have a header `## Research`, any notes linked under that header will be moved into a `Research` folder in your export.
-*   Great for turning a note into a structured bundle of documents.
+Or you can click [here](https://obsidian.md/plugins?id=linked-note-exporter) to install.
 
-### `Ignore Folders & Tags`
-Tell the exporter what to skip.
--   **Ignore Folders**: e.g. `Templates, Archive` — notes in these folders won't be exported.
--   **Ignore Tags**: e.g. `#private` or `#personal/*` — notes with these tags will be left behind.
+## License & Support
 
-## 🧪 Installation
-
-1.  Open **Settings** > **Community Plugins**.
-2.  Turn on Community Plugins.
-3.  Browse and search for **"Linked Note Exporter"**.
-4.  Install and Enable.
-
-## 📄 License & Support
-
-MIT License.
+MIT License
 
 If this plugin saved you time (or sanity), consider [buying me a coffee](https://buymeacoffee.com/the.c0d3r). 
 Your support keeps the updates coming!
