@@ -1,13 +1,15 @@
 import { TFile } from "obsidian";
 import { FileUtils } from "../../utils/file-utils";
+import ExportPlugin from "../../ExportPlugin";
 
 export interface ExportSettingsContext {
-    plugin: any;
+    plugin: ExportPlugin;
     contentEl: HTMLElement;
     currentLinkDepth: number;
     defaultZipSetting: boolean;
     defaultkeepFolderStructureSetting: boolean;
     defaultUseHeaderHierarchy: boolean;
+    defaultIncludeBacklinks: boolean;
     filesToExport: Map<string, TFile>;
     parentMap: Map<string, Set<string>>;
     depthMap: Map<string, number>;
@@ -20,6 +22,7 @@ export class ExportSettingsSection {
     public zipToggle: HTMLInputElement;
     public keepFolderStructureToggle: HTMLInputElement;
     public useHeaderHierarchyToggle: HTMLInputElement;
+    public includeBacklinksToggle: HTMLInputElement;
     public ignoreFoldersInput: HTMLInputElement;
     public ignoreTagsInput: HTMLInputElement;
     public linkDepthSlider: HTMLInputElement;
@@ -154,6 +157,7 @@ export class ExportSettingsSection {
         this.zipToggle = createToggleItem("Create ZIP", "Compress all exported files into export.zip", this.context.defaultZipSetting);
         this.keepFolderStructureToggle = createToggleItem("Maintain Folders", "Preserve the original folder hierarchy in the export", this.context.defaultkeepFolderStructureSetting);
         this.useHeaderHierarchyToggle = createToggleItem("Header Groups", "Organize exported files by the header structure in the source note", this.context.defaultUseHeaderHierarchy);
+        this.includeBacklinksToggle = createToggleItem("Backlinks ↩️", "Include notes that link TO this note (1 level)", this.context.defaultIncludeBacklinks);
 
         this.keepFolderStructureToggle.addEventListener("change", () => {
             if (this.keepFolderStructureToggle.checked && this.useHeaderHierarchyToggle.checked) {
@@ -179,6 +183,16 @@ export class ExportSettingsSection {
                 );
             } else {
                 this.headerMap = new Map();
+            }
+        });
+
+        // Recalculate files when backlinks toggle changes
+        this.includeBacklinksToggle.addEventListener("change", async () => {
+            await this.context.recalculateFiles();
+            const fileListContainer = this.context.contentEl.querySelector(".export-file-list") as HTMLElement;
+            if (fileListContainer) {
+                fileListContainer.empty();
+                this.context.renderFileList(fileListContainer);
             }
         });
     }

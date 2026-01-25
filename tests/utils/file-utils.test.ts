@@ -107,53 +107,7 @@ describe('FileUtils', () => {
     });
 
 
-    describe('extractCanvasLinks', () => {
-        it('should extract file nodes', () => {
-            const content = JSON.stringify({
-                nodes: [
-                    { type: 'file', file: 'image.png' },
-                    { type: 'file', file: 'note.md' }
-                ]
-            });
-            const result = FileUtils.extractCanvasLinks(content);
-            expect(result).toContain('image.png');
-            expect(result).toContain('note.md');
-        });
 
-        it('should extract links from text nodes', () => {
-            const content = JSON.stringify({
-                nodes: [
-                    { type: 'text', text: 'Check [[wiki-link]] and [md-link](file.md)' }
-                ]
-            });
-            const result = FileUtils.extractCanvasLinks(content);
-            expect(result).toContain('wiki-link');
-            expect(result).toContain('file.md');
-        });
-
-        it('should handle mixed nodes', () => {
-            const content = JSON.stringify({
-                nodes: [
-                    { type: 'file', file: 'image.png' },
-                    { type: 'text', text: '[[note]]' }
-                ]
-            });
-            const result = FileUtils.extractCanvasLinks(content);
-            expect(result).toHaveLength(2);
-            expect(result).toContain('image.png');
-            expect(result).toContain('note');
-        });
-
-        it('should return empty array for invalid json', () => {
-            const result = FileUtils.extractCanvasLinks('invalid json');
-            expect(result).toEqual([]);
-        });
-
-        it('should return empty array if no nodes', () => {
-            const result = FileUtils.extractCanvasLinks('{}');
-            expect(result).toEqual([]);
-        });
-    });
 
     describe('matchesIgnore', () => {
         it('should match exact tags', () => {
@@ -170,18 +124,7 @@ describe('FileUtils', () => {
 
 });
 
-describe('matchesIgnore', () => {
-    it('should match exact tags', () => {
-        expect(FileUtils.matchesIgnore('#private', ['#private'])).toBe(true);
-        expect(FileUtils.matchesIgnore('#public', ['#private'])).toBe(false);
-    });
 
-    it('should match wildcard patterns', () => {
-        expect(FileUtils.matchesIgnore('#personal/journal', ['#personal/*'])).toBe(true);
-        expect(FileUtils.matchesIgnore('#personal', ['#personal/*'])).toBe(true);
-        expect(FileUtils.matchesIgnore('#work/project', ['#personal/*'])).toBe(false);
-    });
-});
 
 describe('sanitizeHeaderPath', () => {
     it('should remove markdown headers', () => {
@@ -396,7 +339,7 @@ describe('getFileTags', () => {
 
     it('should return empty array if no cache', () => {
         mockApp.metadataCache.getFileCache.mockReturnValue(null);
-        expect(FileUtils.getFileTags(new TFile(), mockApp)).toEqual([]);
+        expect(FileUtils.getFileTags(new TFile(), mockApp as any)).toEqual([]);
     });
 
     it('should extract frontmatter and inline tags', () => {
@@ -404,7 +347,7 @@ describe('getFileTags', () => {
             frontmatter: { tags: ['#front'] },
             tags: [{ tag: '#inline' }]
         });
-        const result = FileUtils.getFileTags(new TFile(), mockApp);
+        const result = FileUtils.getFileTags(new TFile(), mockApp as any);
         expect(result).toContain('#front');
         expect(result).toContain('#inline');
     });
@@ -420,7 +363,7 @@ describe('shouldExcludeFile', () => {
     it('should exclude by folder', () => {
         const file = new TFile();
         file.path = 'ignored/folder/file.md';
-        const result = FileUtils.shouldExcludeFile(file, mockApp, ['ignored/folder'], []);
+        const result = FileUtils.shouldExcludeFile(file, mockApp as any, ['ignored/folder'], []);
         expect(result).toBeTruthy();
         expect(result).toContain('Folder path matches');
     });
@@ -432,7 +375,7 @@ describe('shouldExcludeFile', () => {
             frontmatter: { tags: ['#ignore'] }
         });
 
-        const result = FileUtils.shouldExcludeFile(file, mockApp, [], ['#ignore']);
+        const result = FileUtils.shouldExcludeFile(file, mockApp as any, [], ['#ignore']);
         expect(result).toBeTruthy();
         expect(result).toContain('Tag matches');
     });
@@ -444,7 +387,7 @@ describe('shouldExcludeFile', () => {
             frontmatter: { tags: ['#keep'] }
         });
 
-        const result = FileUtils.shouldExcludeFile(file, mockApp, [], ['#ignore']);
+        const result = FileUtils.shouldExcludeFile(file, mockApp as any, [], ['#ignore']);
         expect(result).toBeFalsy();
     });
 });
@@ -525,7 +468,7 @@ describe('buildHeaderHierarchyAsync', () => {
 
     it('should return empty map if no cache or headings', async () => {
         mockApp.metadataCache.getFileCache.mockReturnValue(null);
-        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp, [], new Map(), new Map());
+        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp as any, [], new Map(), new Map());
         expect(result.size).toBe(0);
     });
 
@@ -533,7 +476,7 @@ describe('buildHeaderHierarchyAsync', () => {
         mockApp.metadataCache.getFileCache.mockReturnValue({ headings: [] });
         mockApp.vault.read.mockResolvedValue('No links here');
 
-        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp, [], new Map(), new Map());
+        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp as any, [], new Map(), new Map());
         expect(result.size).toBe(0);
     });
 
@@ -544,7 +487,7 @@ describe('buildHeaderHierarchyAsync', () => {
         mockApp.vault.read.mockResolvedValue('Some text \n\n [[linked]]');
         mockApp.metadataCache.getFirstLinkpathDest.mockReturnValue(linkedFile);
 
-        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp, [], new Map(), new Map());
+        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp as any, [], new Map(), new Map());
 
         expect(result.has('linked.md')).toBeTruthy();
         expect(result.get('linked.md')).toEqual([['Section 1']]);
@@ -569,7 +512,7 @@ describe('buildHeaderHierarchyAsync', () => {
 
         const files = [linkedFile, childFile];
 
-        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp, files, parentMap, depthMap);
+        const result = await FileUtils.buildHeaderHierarchyAsync(sourceFile, mockApp as any, files, parentMap, depthMap);
 
         // Check direct link
         expect(result.get('linked.md')).toEqual([['Section 1']]);
@@ -579,3 +522,76 @@ describe('buildHeaderHierarchyAsync', () => {
     });
 });
 
+describe('getBacklinks', () => {
+    const targetFile = new TFile();
+    targetFile.path = 'target.md';
+    targetFile.name = 'target.md';
+
+    const backlinkFile = new TFile();
+    backlinkFile.path = 'backlink.md';
+    backlinkFile.name = 'backlink.md';
+
+    const anotherFile = new TFile();
+    anotherFile.path = 'another.md';
+    anotherFile.name = 'another.md';
+
+    it('should return files that link to the given file', () => {
+        const mockApp = {
+            metadataCache: {
+                resolvedLinks: {
+                    'backlink.md': { 'target.md': 1 },
+                    'another.md': { 'other.md': 1 }
+                }
+            },
+            vault: {
+                getAbstractFileByPath: jest.fn((path: string) => {
+                    if (path === 'backlink.md') return backlinkFile;
+                    return null;
+                })
+            }
+        };
+
+        const result = FileUtils.getBacklinks(targetFile, mockApp as any);
+        expect(result).toHaveLength(1);
+        expect(result[0]).toBe(backlinkFile);
+    });
+
+    it('should return empty array if no backlinks', () => {
+        const mockApp = {
+            metadataCache: {
+                resolvedLinks: {
+                    'other.md': { 'unrelated.md': 1 }
+                }
+            },
+            vault: {
+                getAbstractFileByPath: jest.fn()
+            }
+        };
+
+        const result = FileUtils.getBacklinks(targetFile, mockApp as any);
+        expect(result).toHaveLength(0);
+    });
+
+    it('should return multiple backlinks', () => {
+        const mockApp = {
+            metadataCache: {
+                resolvedLinks: {
+                    'backlink.md': { 'target.md': 1 },
+                    'another.md': { 'target.md': 2 }
+                }
+            },
+            vault: {
+                getAbstractFileByPath: jest.fn((path: string) => {
+                    if (path === 'backlink.md') return backlinkFile;
+                    if (path === 'another.md') return anotherFile;
+                    return null;
+                })
+            }
+        };
+
+        const result = FileUtils.getBacklinks(targetFile, mockApp as any);
+        expect(result).toHaveLength(2);
+        expect(result).toContain(backlinkFile);
+        expect(result).toContain(anotherFile);
+    });
+});

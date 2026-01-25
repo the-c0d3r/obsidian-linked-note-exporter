@@ -89,6 +89,21 @@ export class ExportSettingsTab extends PluginSettingTab {
 					}),
 			);
 
+		// Include Backlinks Setting
+		new Setting(containerEl)
+			.setName("Include Backlinks")
+			.setDesc(
+				"Include notes that link TO this note (1 level only). These appear with a ↩️ icon in the export list.",
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.includeBacklinks)
+					.onChange(async (value) => {
+						this.plugin.settings.includeBacklinks = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
 		// Ignore Folders Setting
 		new Setting(containerEl)
 			.setName("Folders to skip")
