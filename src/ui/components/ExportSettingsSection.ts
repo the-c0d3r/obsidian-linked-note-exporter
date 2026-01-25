@@ -1,8 +1,9 @@
 import { TFile } from "obsidian";
 import { FileUtils } from "../../utils/file-utils";
+import ExportPlugin from "../../ExportPlugin";
 
 export interface ExportSettingsContext {
-    plugin: any;
+    plugin: ExportPlugin;
     contentEl: HTMLElement;
     currentLinkDepth: number;
     defaultZipSetting: boolean;

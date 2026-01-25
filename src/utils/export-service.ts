@@ -122,7 +122,7 @@ export class ExportService {
 			let processedContent;
 			if (file.extension === "md") {
 				const content = await this.app.vault.read(file);
-				processedContent = this.processFileContent(content, file);
+				processedContent = content;
 			} else {
 				processedContent = await this.app.vault.readBinary(file);
 			}
@@ -177,7 +177,7 @@ export class ExportService {
 		let processedContent;
 		if (file.extension === "md") {
 			const content = await this.app.vault.read(file);
-			processedContent = this.processFileContent(content, file);
+			processedContent = content;
 		} else {
 			processedContent = await this.app.vault.readBinary(file);
 		}
@@ -195,13 +195,6 @@ export class ExportService {
 		const writable = await targetFileHandle.createWritable();
 		await writable.write(processedContent);
 		await writable.close();
-	}
-
-	/**
-	 * Process file content (e.g., rewrite links for markdown files)
-	 */
-	private processFileContent(content: string, file: TFile): string {
-		return content;
 	}
 
 	/**

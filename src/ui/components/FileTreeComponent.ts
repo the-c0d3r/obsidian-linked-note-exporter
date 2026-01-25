@@ -1,10 +1,11 @@
 import { TFile, App } from "obsidian";
 import { FileUtils } from "../../utils/file-utils";
 import { FilteredFile } from "../../types";
+import ExportPlugin from "../../ExportPlugin";
 
 export interface FileTreeContext {
     app: App;
-    plugin: any;
+    plugin: ExportPlugin;
     getFilesToExport: () => Map<string, TFile>;
     getFilteredFiles: () => Map<string, FilteredFile>;
     getFileCheckboxes: () => Map<string, HTMLInputElement>;
