@@ -1,7 +1,9 @@
 import { Modal, TFile, App, Notice } from "obsidian";
 import { ExportModalResult, FilteredFile } from "../types";
-import { UI_CONSTANTS } from "../utils/constants";
-import { FileUtils } from "../utils/file-utils";
+
+import { LinkExtractor } from "../utils/link-extractor";
+import { FilterUtils } from "../utils/filter-utils";
+import { HeaderHierarchy } from "../utils/header-hierarchy";
 import { injectExportModalStyles } from "./styles/ExportModalStyles";
 import { FileTreeComponent } from "./components/FileTreeComponent";
 import { ExportSettingsSection } from "./components/ExportSettingsSection";
@@ -71,7 +73,8 @@ export class ExportConfirmationModal extends Modal {
 			depthMap: this.depthMap,
 			sourceFile: this.sourceFile,
 			recalculateFiles: this.recalculateFiles.bind(this),
-			renderFileList: (container) => this.treeComponent.render(container, this.sourceFile)
+			renderFileList: (container) =>
+				this.treeComponent.render(container, this.sourceFile),
 		});
 
 		this.treeComponent = new FileTreeComponent({
@@ -82,10 +85,11 @@ export class ExportConfirmationModal extends Modal {
 			getFileCheckboxes: () => this.fileCheckboxes,
 			getChildrenMap: () => this.childrenMap,
 			getBacklinksSet: () => this.backlinksSet,
-			getIgnoreFoldersInput: () => this.settingsSection?.ignoreFoldersInput,
+			getIgnoreFoldersInput: () =>
+				this.settingsSection?.ignoreFoldersInput,
 			getIgnoreTagsInput: () => this.settingsSection?.ignoreTagsInput,
 			updateSelectedCount: this.updateSelectedCount.bind(this),
-			updateSourceInfo: this.updateSourceInfo.bind(this)
+			updateSourceInfo: this.updateSourceInfo.bind(this),
 		});
 	}
 
@@ -119,25 +123,43 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private createSourceInfo() {
-		const container = this.contentEl.createEl("div", { cls: "export-source-info" });
+		const container = this.contentEl.createEl("div", {
+			cls: "export-source-info",
+		});
 
 		const details = container.createEl("div", { cls: "source-details" });
-		details.createEl("span", { cls: "source-label", text: "Exporting Note:" });
-		details.createEl("span", { cls: "source-name", text: this.sourceFile.basename });
+		details.createEl("span", {
+			cls: "source-label",
+			text: "Exporting Note:",
+		});
+		details.createEl("span", {
+			cls: "source-name",
+			text: this.sourceFile.basename,
+		});
 
-		const stats = container.createEl("div", { cls: "source-stats", attr: { id: "source-stats-container" } });
+		const stats = container.createEl("div", {
+			cls: "source-stats",
+			attr: { id: "source-stats-container" },
+		});
 		this.updateSourceInfo();
 	}
 
 	private createFileList() {
-		const fileListHeader = this.contentEl.createEl("div", { cls: "file-list-header" });
+		const fileListHeader = this.contentEl.createEl("div", {
+			cls: "file-list-header",
+		});
 		fileListHeader.createEl("span", { text: "Files:" });
-		const selectedCount = fileListHeader.createEl("span", { cls: "file-meta", attr: { id: "selected-file-count" } });
+		const selectedCount = fileListHeader.createEl("span", {
+			cls: "file-meta",
+			attr: { id: "selected-file-count" },
+		});
 
-		const fileListContainer = this.contentEl.createEl("div", { cls: "export-file-list" });
-		fileListContainer.style.maxHeight = UI_CONSTANTS.MODAL.MAX_FILE_LIST_HEIGHT;
+		const fileListContainer = this.contentEl.createEl("div", {
+			cls: "export-file-list",
+		});
+		fileListContainer.style.maxHeight = "500px";
 		fileListContainer.style.overflowY = "auto";
-		fileListContainer.style.marginBottom = UI_CONSTANTS.SPACING.DEFAULT_MARGIN;
+		fileListContainer.style.marginBottom = "15px";
 
 		this.treeComponent.render(fileListContainer, this.sourceFile);
 	}
@@ -145,16 +167,20 @@ export class ExportConfirmationModal extends Modal {
 	private createButtons() {
 		const buttonContainer = this.contentEl.createEl("div", {
 			cls: "modal-button-container",
-			attr: { style: "margin-top: 20px;" }
+			attr: { style: "margin-top: 20px;" },
 		});
 
-		const cancelButton = buttonContainer.createEl("button", { text: "Cancel" });
+		const cancelButton = buttonContainer.createEl("button", {
+			text: "Cancel",
+		});
 		cancelButton.addEventListener("click", () => this.close());
 
 		const exportButton = buttonContainer.createEl("button", {
 			cls: "mod-cta",
 			text: "Export",
-			attr: { style: "background-color: #7c4dff; color: white; border: none;" }
+			attr: {
+				style: "background-color: #7c4dff; color: white; border: none;",
+			},
 		});
 
 		exportButton.addEventListener("click", async () => {
@@ -166,8 +192,11 @@ export class ExportConfirmationModal extends Modal {
 			try {
 				targetDir = await this.exportService.showDirectoryPicker();
 			} catch (error) {
-				console.error("Directory picker failed:", error);
-				new Notice(`Failed to open directory picker: ${error.message}`, 5000);
+				// console.error removed for compliance
+				new Notice(
+					`Failed to open directory picker: ${error.message}`,
+					5000,
+				);
 				return; // Don't close modal on error
 			}
 
@@ -179,13 +208,12 @@ export class ExportConfirmationModal extends Modal {
 			this.resolve({
 				confirmed: true,
 				createZip: this.settingsSection.zipToggle.checked,
-				keepFolderStructure: this.settingsSection.keepFolderStructureToggle.checked,
-				useHeaderHierarchy: this.settingsSection.useHeaderHierarchyToggle.checked,
+				keepFolderStructure:
+					this.settingsSection.keepFolderStructureToggle.checked,
+				useHeaderHierarchy:
+					this.settingsSection.useHeaderHierarchyToggle.checked,
 				selectedFiles: this.getSelectedFiles(),
 				headerMap: this.settingsSection.headerMap,
-				linkDepth: this.settingsSection.currentLinkDepth,
-				ignoreFolders: this.settingsSection.ignoreFoldersInput.value.split(",").map(f => f.trim()).filter(f => f),
-				ignoreTags: this.settingsSection.ignoreTagsInput.value.split(",").map(t => t.trim()).filter(t => t),
 				targetDir,
 			});
 			this.close();
@@ -193,17 +221,28 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private updateSourceInfo() {
-		const statsContainer = this.contentEl.querySelector("#source-stats-container");
+		const statsContainer = this.contentEl.querySelector(
+			"#source-stats-container",
+		);
 		if (statsContainer) {
 			statsContainer.empty();
 
-			const included = statsContainer.createEl("span", { cls: "stat-item" });
-			included.innerHTML = `<strong>${this.filesToExport.size}</strong> included`;
+			const included = statsContainer.createEl("span", {
+				cls: "stat-item",
+			});
+			included.createEl("strong", { text: `${this.filesToExport.size}` });
+			included.createSpan({ text: " included" });
 
-			statsContainer.createEl("span", { cls: "stat-item", text: "•" }).style.color = "var(--text-muted)";
+			statsContainer.createEl("span", {
+				cls: "stat-item",
+				text: "•",
+			}).style.color = "var(--text-muted)";
 
-			const filtered = statsContainer.createEl("span", { cls: "stat-item" });
-			filtered.innerHTML = `<strong>${this.filteredFiles.size}</strong> filtered`;
+			const filtered = statsContainer.createEl("span", {
+				cls: "stat-item",
+			});
+			filtered.createEl("strong", { text: `${this.filteredFiles.size}` });
+			filtered.createSpan({ text: " filtered" });
 			if (this.filteredFiles.size > 0) {
 				filtered.style.color = "var(--text-error)";
 			}
@@ -212,9 +251,13 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private updateSelectedCount() {
-		const selectedCountEl = this.contentEl.querySelector("#selected-file-count");
+		const selectedCountEl = this.contentEl.querySelector(
+			"#selected-file-count",
+		);
 		if (selectedCountEl) {
-			const selected = Array.from(this.fileCheckboxes.values()).filter(cb => cb.checked).length;
+			const selected = Array.from(this.fileCheckboxes.values()).filter(
+				(cb) => cb.checked,
+			).length;
 			selectedCountEl.textContent = `${selected} selected`;
 		}
 	}
@@ -235,8 +278,16 @@ export class ExportConfirmationModal extends Modal {
 		this.filteredFiles.clear();
 		this.fileCheckboxes.clear();
 
-		const ignoreFolders = this.settingsSection.ignoreFoldersInput?.value.split(",").map(f => f.trim()).filter(f => f) || [];
-		const ignoreTags = this.settingsSection.ignoreTagsInput?.value.split(",").map(t => t.trim()).filter(t => t) || [];
+		const ignoreFolders =
+			this.settingsSection.ignoreFoldersInput?.value
+				.split(",")
+				.map((f) => f.trim())
+				.filter((f) => f) || [];
+		const ignoreTags =
+			this.settingsSection.ignoreTagsInput?.value
+				.split(",")
+				.map((t) => t.trim())
+				.filter((t) => t) || [];
 
 		const allFilesToCopy = new Map<string, TFile>();
 		const visited = new Set<string>();
@@ -244,19 +295,36 @@ export class ExportConfirmationModal extends Modal {
 		const depthMap = new Map<string, number>();
 		this.childrenMap.clear();
 
-		const processFile = async (f: TFile, level = 0, parentPath?: string) => {
-			if (visited.has(f.path) || level > this.settingsSection.currentLinkDepth) return;
+		const processFile = async (
+			f: TFile,
+			level = 0,
+			parentPath?: string,
+		) => {
+			if (
+				visited.has(f.path) ||
+				level > this.settingsSection.currentLinkDepth
+			)
+				return;
 			visited.add(f.path);
 
 			if (parentPath) {
-				if (!this.childrenMap.has(parentPath)) this.childrenMap.set(parentPath, new Set());
+				if (!this.childrenMap.has(parentPath))
+					this.childrenMap.set(parentPath, new Set());
 				this.childrenMap.get(parentPath)!.add(f.path);
 			}
 
-			const shouldExclude = FileUtils.shouldExcludeFile(f, this.plugin.app, ignoreFolders, ignoreTags);
+			const shouldExclude = FilterUtils.shouldExcludeFile(
+				f,
+				this.plugin.app,
+				ignoreFolders,
+				ignoreTags,
+			);
 
 			if (shouldExclude) {
-				this.filteredFiles.set(f.path, { file: f, reason: shouldExclude });
+				this.filteredFiles.set(f.path, {
+					file: f,
+					reason: shouldExclude,
+				});
 				return;
 			}
 
@@ -268,13 +336,17 @@ export class ExportConfirmationModal extends Modal {
 			let linkedPaths: string[] = [];
 
 			if (f.extension === "md") {
-				linkedPaths = FileUtils.getLinkedPaths(content);
+				linkedPaths = LinkExtractor.getLinkedPaths(content);
 			} else if (f.extension === "canvas") {
-				linkedPaths = FileUtils.extractCanvasLinks(content);
+				linkedPaths = LinkExtractor.extractCanvasLinks(content);
 			}
 
 			for (const path of linkedPaths) {
-				const linkedFile = this.plugin.app.metadataCache.getFirstLinkpathDest(path, f.path);
+				const linkedFile =
+					this.plugin.app.metadataCache.getFirstLinkpathDest(
+						path,
+						f.path,
+					);
 				if (linkedFile instanceof TFile) {
 					await processFile(linkedFile, level + 1, f.path);
 				}
@@ -286,22 +358,38 @@ export class ExportConfirmationModal extends Modal {
 		// Process backlinks if enabled (1 level only)
 		this.backlinksSet.clear();
 		if (this.settingsSection.includeBacklinksToggle?.checked) {
-			const backlinks = FileUtils.getBacklinks(this.sourceFile, this.plugin.app);
+			const backlinks = LinkExtractor.getBacklinks(
+				this.sourceFile,
+				this.plugin.app,
+			);
 			for (const backlink of backlinks) {
 				if (!visited.has(backlink.path)) {
 					visited.add(backlink.path);
 
-					const shouldExclude = FileUtils.shouldExcludeFile(backlink, this.plugin.app, ignoreFolders, ignoreTags);
+					const shouldExclude = FilterUtils.shouldExcludeFile(
+						backlink,
+						this.plugin.app,
+						ignoreFolders,
+						ignoreTags,
+					);
 					if (shouldExclude) {
-						this.filteredFiles.set(backlink.path, { file: backlink, reason: shouldExclude });
+						this.filteredFiles.set(backlink.path, {
+							file: backlink,
+							reason: shouldExclude,
+						});
 					} else {
 						allFilesToCopy.set(backlink.path, backlink);
 						this.backlinksSet.add(backlink.path);
 						// Add backlinks as children of the source file so they appear in the tree
 						if (!this.childrenMap.has(this.sourceFile.path)) {
-							this.childrenMap.set(this.sourceFile.path, new Set());
+							this.childrenMap.set(
+								this.sourceFile.path,
+								new Set(),
+							);
 						}
-						this.childrenMap.get(this.sourceFile.path)!.add(backlink.path);
+						this.childrenMap
+							.get(this.sourceFile.path)!
+							.add(backlink.path);
 					}
 				}
 			}
@@ -309,23 +397,27 @@ export class ExportConfirmationModal extends Modal {
 
 		// Populate existing maps instead of reassigning them to maintain references
 		this.filesToExport.clear();
-		allFilesToCopy.forEach((value, key) => this.filesToExport.set(key, value));
-
+		allFilesToCopy.forEach((value, key) =>
+			this.filesToExport.set(key, value),
+		);
 
 		if (this.settingsSection.useHeaderHierarchyToggle?.checked) {
-			this.settingsSection.headerMap = await FileUtils.buildHeaderHierarchyAsync(
-				this.sourceFile,
-				this.plugin.app,
-				Array.from(this.filesToExport.values()),
-				this.parentMap,
-				this.depthMap,
-			);
+			this.settingsSection.headerMap =
+				await HeaderHierarchy.buildHeaderHierarchyAsync(
+					this.sourceFile,
+					this.plugin.app,
+					Array.from(this.filesToExport.values()),
+					this.parentMap,
+					this.depthMap,
+				);
 		} else {
 			this.settingsSection.headerMap = new Map();
 		}
 
 		// Refresh UI
-		const fileListContainer = this.contentEl.querySelector(".export-file-list") as HTMLElement;
+		const fileListContainer = this.contentEl.querySelector(
+			".export-file-list",
+		) as HTMLElement;
 		if (fileListContainer) {
 			fileListContainer.empty();
 			this.treeComponent.render(fileListContainer, this.sourceFile);
