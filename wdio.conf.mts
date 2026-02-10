@@ -1,4 +1,11 @@
 import * as path from "path";
+import * as fs from "fs";
+
+// Ensure vault directory exists
+const vaultPath = path.resolve("./.obsidian-vaults/e2e-vault");
+if (!fs.existsSync(vaultPath)) {
+	fs.mkdirSync(vaultPath, { recursive: true });
+}
 
 export const config = {
 	runner: "local",
