@@ -16,9 +16,11 @@
 		"allowSyntheticDefaultImports": true,
 		"types": [
 			"node",
+			"jest",
 			"@wdio/globals/types",
 			"@wdio/mocha-framework",
-			"wdio-obsidian-service"
+			"wdio-obsidian-service",
+			"wicg-file-system-access"
 		]
 	},
 	"include": ["**/*.ts"]

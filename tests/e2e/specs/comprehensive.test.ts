@@ -161,7 +161,7 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 		await browser.waitUntil(
 			async () => {
 				return await browser.execute(
-					(p, t) => {
+					(p: string, t: string) => {
 						const app = (window as any).app;
 						const file = app.vault.getAbstractFileByPath(p);
 						if (!file) return false;
@@ -205,7 +205,7 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 		value: any,
 	) {
 		await browser.execute(
-			(t, label, val) => {
+			((t: string, label: string, val: any) => {
 				if (t === "toggle") {
 					const spans = Array.from(
 						document.querySelectorAll(".setting-item span"),
@@ -247,7 +247,7 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 						);
 					}
 				}
-			},
+			}) as any,
 			type,
 			labelText,
 			value,
@@ -292,7 +292,7 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 	}
 
 	async function getExportedFiles(scenarioId: number): Promise<string[]> {
-		return await browser.execute(async (id) => {
+		return await browser.execute(async (id: number) => {
 			const app = (window as any).app;
 			const dir = `test-output-${id}`;
 			async function listRecursive(d: string): Promise<string[]> {
