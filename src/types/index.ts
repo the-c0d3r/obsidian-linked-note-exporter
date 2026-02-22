@@ -1,26 +1,4 @@
-// Import Obsidian types first
-import type {
-	TFile,
-	App,
-	Plugin,
-	Notice,
-	Menu,
-	PluginSettingTab,
-	Setting,
-	Modal,
-} from "obsidian";
-
-// Re-export Obsidian types for convenience
-export type {
-	TFile,
-	App,
-	Plugin,
-	Notice,
-	Menu,
-	PluginSettingTab,
-	Setting,
-	Modal,
-};
+import type { TFile } from "obsidian";
 
 // Plugin Settings Interface
 export interface ExportPluginSettings {
@@ -41,9 +19,6 @@ export interface ExportModalResult {
 	useHeaderHierarchy: boolean; // Whether to organize files by header structure in source note
 	headerMap: Map<string, string[][]>; // Map of file paths to their header hierarchy paths
 	selectedFiles: TFile[]; // The list of files selected for export
-	linkDepth: number; // The link depth chosen by the user for linked file traversal
-	ignoreFolders: string[]; // Folder names to exclude from export (user input)
-	ignoreTags: string[]; // Tag patterns to exclude files from export (user input)
 	targetDir?: FileSystemDirectoryHandle; // Directory selected for export (must be picked in user gesture context)
 }
 

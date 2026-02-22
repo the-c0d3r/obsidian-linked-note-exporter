@@ -1,5 +1,5 @@
 import { TFile, Notice, App } from "obsidian";
-import { FileUtils } from "./file-utils";
+import { HeaderHierarchy } from "./header-hierarchy";
 
 export class ExportService {
 	private app: App;
@@ -64,7 +64,7 @@ export class ExportService {
 			const exportedPaths = new Set<string>(); // Track to avoid duplicate writes
 
 			for (const file of files) {
-				const exportPaths = FileUtils.getExportPathsForFile(
+				const exportPaths = HeaderHierarchy.getExportPathsForFile(
 					file,
 					headerMap,
 					true, // includeSourceName
@@ -129,7 +129,7 @@ export class ExportService {
 
 			// Get the file path(s) within the ZIP
 			if (useHeaderHierarchy) {
-				const exportPaths = FileUtils.getExportPathsForFile(
+				const exportPaths = HeaderHierarchy.getExportPathsForFile(
 					file,
 					headerMap,
 					true,
@@ -143,7 +143,7 @@ export class ExportService {
 					}
 				}
 			} else {
-				const zipPath = this.getZipFilePath(
+				const zipPath = this.getExportFilePath(
 					file,
 					keepFolderStructure,
 				);
@@ -173,7 +173,6 @@ export class ExportService {
 		useHeaderHierarchy: boolean,
 		headerHierarchyPath: string = "",
 	): Promise<void> {
-
 		let processedContent;
 		if (file.extension === "md") {
 			const content = await this.app.vault.read(file);
@@ -183,9 +182,10 @@ export class ExportService {
 		}
 
 		// Create the file path within the target directory
-		const targetPath = useHeaderHierarchy && headerHierarchyPath
-			? headerHierarchyPath
-			: this.getTargetFilePath(file, keepFolderStructure);
+		const targetPath =
+			useHeaderHierarchy && headerHierarchyPath
+				? headerHierarchyPath
+				: this.getExportFilePath(file, keepFolderStructure);
 
 		const targetFileHandle = await this.createNestedFile(
 			targetDir,
@@ -198,35 +198,13 @@ export class ExportService {
 	}
 
 	/**
-	 * Get the target file path for export
+	 * Get the file path for export (used for both regular and ZIP exports)
 	 */
-	private getTargetFilePath(
+	private getExportFilePath(
 		file: TFile,
 		keepFolderStructure: boolean,
 	): string {
-		if (keepFolderStructure) {
-			// Use the full path structure
-			return file.path;
-		} else {
-			// Just use the file name to avoid path conflicts
-			return file.name;
-		}
-	}
-
-	/**
-	 * Get the ZIP file path for export
-	 */
-	private getZipFilePath(
-		file: TFile,
-		keepFolderStructure: boolean,
-	): string {
-		if (keepFolderStructure) {
-			// Use the full path structure within the ZIP
-			return file.path;
-		} else {
-			// Just use the file name within the ZIP
-			return file.name;
-		}
+		return keepFolderStructure ? file.path : file.name;
 	}
 
 	/**
