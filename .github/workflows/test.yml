@@ -30,7 +30,7 @@ jobs:
 
             - uses: actions/setup-node@v4
               with:
-                  node-version: "22.x"
+                  node-version: "25.x"
                   cache: "npm"
 
             - run: npm ci
@@ -116,7 +116,7 @@ jobs:
             - name: Use Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: 22.x
+                  node-version: 25.x
                   cache: "npm"
 
             - run: npm ci
