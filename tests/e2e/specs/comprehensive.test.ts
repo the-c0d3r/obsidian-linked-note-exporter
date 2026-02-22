@@ -59,6 +59,25 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 			await createFile("Sub/Link2.md", "[[Link1]]\n#ignore-me");
 			await createFile("Link3.md", "This is Link 3");
 			await createFile("Images/img.png", "fake image data");
+			await createFile("Backlinker.md", "This links back to [[Source]]");
+			await createFile("Templates/Template1.md", "Template content");
+			await createFile(
+				"Canvas.canvas",
+				JSON.stringify({
+					nodes: [
+						{
+							id: "node1",
+							type: "file",
+							file: "Link1.md",
+							x: 0,
+							y: 0,
+							width: 400,
+							height: 400,
+						},
+					],
+					edges: [],
+				}),
+			);
 		});
 
 		// Mock showDirectoryPicker
@@ -320,6 +339,26 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 		});
 	}
 
+	async function openFile(filePath: string) {
+		await browser.execute(async (p: string) => {
+			const app = (window as any).app;
+			const file = app.vault.getAbstractFileByPath(p);
+			if (file) await app.workspace.getLeaf(true).openFile(file);
+		}, filePath);
+		const fileName = filePath.split("/").pop()!;
+		await browser.waitUntil(
+			async () => {
+				return await browser.execute((name: string) => {
+					const app = (window as any).app;
+					const activeFile = app.workspace.getActiveFile();
+					return activeFile && activeFile.name === name;
+				}, fileName);
+			},
+			{ timeout: 10000 },
+		);
+		await browser.pause(500);
+	}
+
 	it("Scenario 1: Default Export (Depth 0) - Only Source.md", async () => {
 		await openModalAndExpand();
 		await resetAll();
@@ -396,5 +435,196 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 		await clickExport();
 		const files = await getExportedFiles(currentScenario);
 		expect(files).toContain("export.zip");
+	});
+
+	it("Scenario 7: Backlinks Toggle - Includes files that link TO source", async () => {
+		await openModalAndExpand();
+		await resetAll();
+		await setSetting("toggle", "Backlinks ↩️", true);
+		await waitForUIUpdate(
+			(f) => f.includes("Backlinker.md"),
+			"UI never showed Backlinker.md",
+		);
+		await browser.pause(2000);
+		await clickExport();
+		const files = await getExportedFiles(currentScenario);
+		expect(files).toContain("Source.md");
+		expect(files).toContain("Backlinker.md");
+	});
+
+	it("Scenario 8: Ignore Folders - Excludes files in ignored folders", async () => {
+		await waitForMetadata("Source.md", "links");
+		await openModalAndExpand();
+		await resetAll();
+		await setSetting("slider", "", 1);
+		await waitForUIUpdate(
+			(f) => f.includes("Link1.md"),
+			"UI never updated to Depth 1",
+		);
+		await setSetting("input", "Folders", "Sub");
+		await browser.pause(2000);
+		await clickExport();
+		const files = await getExportedFiles(currentScenario);
+		expect(files).toContain("Source.md");
+		expect(files).toContain("Link1.md");
+		expect(files.some((f) => f.includes("Link2.md"))).toBe(false);
+	});
+
+	it("Scenario 9: File Deselection - Unchecked files excluded", async () => {
+		await waitForMetadata("Source.md", "links");
+		await openModalAndExpand();
+		await resetAll();
+		await setSetting("slider", "", 1);
+		await waitForUIUpdate(
+			(f) => f.includes("Link1.md"),
+			"UI never updated to Depth 1",
+		);
+		await browser.pause(2000);
+		// Uncheck Link1.md
+		await browser.execute(() => {
+			const fileNames = Array.from(
+				document.querySelectorAll(".file-name"),
+			);
+			const link1Name = fileNames.find(
+				(el) => el.textContent === "Link1.md",
+			);
+			if (link1Name) {
+				const wrapper =
+					link1Name.closest(".file-content-wrapper") ||
+					link1Name.closest(".file-tree-item");
+				const checkbox = wrapper?.querySelector(
+					'input[type="checkbox"]',
+				) as HTMLInputElement;
+				if (checkbox && checkbox.checked) {
+					checkbox.checked = false;
+					checkbox.dispatchEvent(
+						new Event("change", { bubbles: true }),
+					);
+				}
+			}
+		});
+		await browser.pause(500);
+		await clickExport();
+		const files = await getExportedFiles(currentScenario);
+		expect(files).toContain("Source.md");
+		expect(files.some((f) => f.includes("Link1.md"))).toBe(false);
+	});
+
+	it("Scenario 10: Canvas File Export - Canvas links followed", async () => {
+		await openFile("Canvas.canvas");
+		await browser.executeObsidianCommand(
+			"linked-note-exporter:export-current-file-with-links",
+		);
+		await $(".modal-container").waitForExist({ timeout: 10000 });
+		await browser.execute(() => {
+			const header = document.querySelector(".collapsible-header");
+			const content = document.querySelector(".collapsible-content");
+			if (header && content && !content.classList.contains("open")) {
+				(header as HTMLElement).click();
+			}
+		});
+		await browser.pause(1000);
+		await resetAll();
+		await setSetting("slider", "", 1);
+		await waitForUIUpdate(
+			(f) => f.includes("Link1.md"),
+			"Canvas export UI never showed Link1.md",
+		);
+		await browser.pause(2000);
+		await clickExport();
+		const files = await getExportedFiles(currentScenario);
+		expect(files).toContain("Canvas.canvas");
+		expect(files).toContain("Link1.md");
+	});
+
+	it("Scenario 11: Maintain Folders - Subdirectory paths preserved", async () => {
+		await waitForMetadata("Source.md", "links");
+		await openModalAndExpand();
+		await resetAll();
+		await setSetting("slider", "", 1);
+		await waitForUIUpdate(
+			(f) => f.includes("Link1.md"),
+			"UI never updated to Depth 1",
+		);
+		await setSetting("toggle", "Maintain Folders", true);
+		await browser.pause(2000);
+		await clickExport();
+		const files = await getExportedFiles(currentScenario);
+		expect(files).toContain("Source.md");
+		// Verify subfolder structure is preserved
+		expect(
+			files.some((f) => f.includes("Sub/") && f.includes("Link2.md")),
+		).toBe(true);
+	});
+
+	it("Scenario 12: Embedded Images - Binary attachments exported", async () => {
+		await waitForMetadata("Source.md", "links");
+		await openModalAndExpand();
+		await resetAll();
+		await setSetting("slider", "", 1);
+		await waitForUIUpdate(
+			(f) => f.includes("img.png"),
+			"UI never showed img.png",
+		);
+		await browser.pause(2000);
+		await clickExport();
+		const files = await getExportedFiles(currentScenario);
+		expect(files).toContain("img.png");
+	});
+
+	it("Scenario 13: Export Cancellation - No files exported", async () => {
+		await openModalAndExpand();
+		// Click Cancel button (non mod-cta button)
+		await browser.execute(() => {
+			const buttons = Array.from(
+				document.querySelectorAll(
+					".modal-button-container button:not(.mod-cta)",
+				),
+			);
+			const cancelBtn = buttons.find(
+				(b) => b.textContent === "Cancel",
+			) as HTMLElement;
+			if (cancelBtn) cancelBtn.click();
+		});
+		await $(".modal-container").waitForExist({
+			reverse: true,
+			timeout: 10000,
+		});
+		const files = await getExportedFiles(currentScenario);
+		expect(files.length).toBe(0);
+	});
+
+	it("Scenario 14: No File Open - Notice shown, no modal", async () => {
+		// Close all workspace leaves (beforeEach already opened Source.md)
+		await browser.execute(async () => {
+			const app = (window as any).app;
+			const leaves = app.workspace.getLeavesOfType("markdown");
+			for (const leaf of leaves) {
+				leaf.detach();
+			}
+			// Also close canvas leaves
+			const canvasLeaves = app.workspace.getLeavesOfType("canvas");
+			for (const leaf of canvasLeaves) {
+				leaf.detach();
+			}
+		});
+		await browser.pause(1000);
+		// Verify no active file
+		const hasActiveFile = await browser.execute(() => {
+			const app = (window as any).app;
+			const file = app.workspace.getActiveFile();
+			return !!file;
+		});
+		expect(hasActiveFile).toBe(false);
+		// Run export command — should show Notice, not modal
+		await browser.executeObsidianCommand(
+			"linked-note-exporter:export-current-file-with-links",
+		);
+		await browser.pause(2000);
+		// Verify no modal appeared
+		const modalExists = await browser.execute(() => {
+			return !!document.querySelector(".modal-container");
+		});
+		expect(modalExists).toBe(false);
 	});
 });
