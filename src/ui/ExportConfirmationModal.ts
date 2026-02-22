@@ -413,14 +413,5 @@ export class ExportConfirmationModal extends Modal {
 		} else {
 			this.settingsSection.headerMap = new Map();
 		}
-
-		// Refresh UI
-		const fileListContainer = this.contentEl.querySelector(
-			".export-file-list",
-		) as HTMLElement;
-		if (fileListContainer) {
-			fileListContainer.empty();
-			this.treeComponent.render(fileListContainer, this.sourceFile);
-		}
 	}
 }

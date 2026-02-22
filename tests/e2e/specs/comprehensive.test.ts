@@ -355,6 +355,8 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 			(f) => f.includes("Link3.md"),
 			"UI never updated to Depth 2",
 		);
+		// Wait for async recalculateFiles to fully complete and re-render
+		await browser.pause(2000);
 		await clickExport();
 		const files = await getExportedFiles(currentScenario);
 		expect(files).toContain("Link3.md");
