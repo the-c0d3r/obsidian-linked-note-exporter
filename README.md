@@ -70,7 +70,7 @@ To run the E2E tests locally:
 
 1. Install dependencies:
     ```bash
-    npm install
+    npm install --include=dev
     ```
 2. Run the comprehensive test suite:
     ```bash
@@ -85,3 +85,47 @@ MIT License
 
 If this plugin saved you time (or sanity), consider [buying me a coffee](https://buymeacoffee.com/the.c0d3r).
 Your support keeps the updates coming!
+
+## Development
+
+Install dependencies
+
+```bash
+npm install --include=dev
+```
+
+## Testing
+
+Run end to end test using wdio.
+
+```bash
+npm run e2e-test
+```
+
+Expected output:
+
+```bash
+...
+Linked Note Exporter - Comprehensive Tests
+   ✓ Scenario 1: Default Export (Depth 0) - Only Source.md
+   ✓ Scenario 2: Depth 1 + Subfolders - Linked files included
+   ✓ Scenario 3: Depth 2 - Includes deep links
+   ✓ Scenario 4: Ignore Tag - Excludes matching files
+   ✓ Scenario 5: Header Hierarchy - Files grouped by headers
+   ✓ Scenario 6: ZIP Export - Creates export.zip
+   ✓ Scenario 7: Backlinks Toggle - Includes files that link TO source
+   ✓ Scenario 8: Ignore Folders - Excludes files in ignored folders
+   ✓ Scenario 9: File Deselection - Unchecked files excluded
+   ✓ Scenario 10: Canvas File Export - Canvas links followed
+   ✓ Scenario 11: Maintain Folders - Subdirectory paths preserved
+   ✓ Scenario 12: Embedded Images - Binary attachments exported
+   ✓ Scenario 13: Export Cancellation - No files exported
+   ✓ Scenario 14: No File Open - Notice shown, no modal
+14 passing (2m 59.5s)
+```
+
+Run unit test
+
+```bash
+npm run test
+```
