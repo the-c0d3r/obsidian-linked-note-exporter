@@ -1,5 +1,8 @@
 # Linked Note Exporter
 
+![Build Status](https://github.com/the-c0d3r/obsidian-linked-note-exporter/actions/workflows/test.yml/badge.svg)
+![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?label=downloads&query=$["linked-note-exporter"].downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json&logo=obsidian&color=%23483699)
+
 This Obsidian plugin helps you share your notes with others.
 
 When you share a simple markdown file, any attachments like images, PDFs, or links to other notes usually break because the files are missing. This plugin solves that by collecting your note and everything connected to it — any attachments or linked notes — into a single folder or ZIP file.
