@@ -99,7 +99,7 @@ npm install --include=dev
 Run end to end test using wdio.
 
 ```bash
-npm run e2e-test
+npm run test:e2e
 ```
 
 Expected output:
@@ -127,5 +127,5 @@ Linked Note Exporter - Comprehensive Tests
 Run unit test
 
 ```bash
-npm run test
+npm run test:unit
 ```

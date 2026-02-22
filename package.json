@@ -7,8 +7,8 @@
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"test": "jest",
-		"e2e-test": "npx wdio run wdio.conf.mts --spec tests/e2e/specs/comprehensive.test.ts"
+		"test:unit": "jest",
+		"test:e2e": "npx wdio run wdio.conf.mts --spec tests/e2e/specs/comprehensive.test.ts"
 	},
 	"keywords": [],
 	"author": "",
