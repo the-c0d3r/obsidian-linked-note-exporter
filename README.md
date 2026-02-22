@@ -49,36 +49,6 @@ Here is what the different options do:
 
 Or you can click [here](https://obsidian.md/plugins?id=linked-note-exporter) to install.
 
-## Development & Testing
-
-### End-to-End Tests
-
-The plugin includes a comprehensive suite of E2E tests powered by WebdriverIO and the `wdio-obsidian-service`. These tests run directly in a controlled instance of Obsidian.
-
-**Scenarios covered:**
-
-1. **Default Export**: Exporting a single note (Depth 0).
-2. **Depth 1 + Subfolders**: Including directly linked notes and maintaining folder structure.
-3. **Depth 2**: Including deep links (notes linked by linked notes).
-4. **Filtering**: Excluding files based on tags (e.g., `#ignore-me`).
-5. **Header Hierarchy**: Organizing exported files automatically based on the source note's header structure.
-6. **ZIP Export**: Verifying the creation of a valid `export.zip` archive.
-
-### Running Tests
-
-To run the E2E tests locally:
-
-1. Install dependencies:
-    ```bash
-    npm install --include=dev
-    ```
-2. Run the comprehensive test suite:
-    ```bash
-    npx wdio run wdio.conf.mts --spec tests/e2e/specs/comprehensive.test.ts
-    ```
-
-Note: On Linux, the tests will attempt to find your Chromium/Chrome installation. If you encounter issues, ensure `xvfb` is installed if running in a headless environment.
-
 ## License & Support
 
 MIT License
