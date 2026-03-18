@@ -1,0 +1,133 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in the plugin.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, please:
+        - Search [existing issues](../../issues) to avoid duplicates.
+        - Test with **no other plugins enabled** to rule out conflicts.
+        - Confirm the bug is reproducible on the **latest plugin version**.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+      placeholder: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to trigger the bug reliably.
+      placeholder: |
+        1. Open vault with...
+        2. Create a note with...
+        3. Run command / click...
+        4. Observe...
+    validations:
+      required: true
+
+  - type: textarea
+    id: mve
+    attributes:
+      label: Minimal Verifiable Example
+      description: |
+        If the bug involves specific note content, a template, or a config — paste the **smallest possible example** that still triggers the issue.
+        Reduce it to only what's necessary. No personal data.
+      placeholder: |
+        ```markdown
+        # Example note content that triggers the bug
+        ```
+      render: markdown
+    validations:
+      required: false
+
+  - type: textarea
+    id: console-log
+    attributes:
+      label: Console Output
+      description: |
+        Open the developer console (`Ctrl+Shift+I` / `Cmd+Opt+I`) **before** reproducing the bug, then paste any errors or warnings here.
+        If you see a long stack trace, include the full thing.
+      placeholder: |
+        Paste console output here. No output = please double-check with the console open.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin Version
+      description: Found in Settings → Community Plugins → (this plugin).
+      placeholder: "e.g. 1.4.2"
+    validations:
+      required: true
+
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian Version
+      description: Found in Settings → About → Obsidian version.
+      placeholder: "e.g. 1.7.7"
+    validations:
+      required: true
+
+  - type: input
+    id: installer-version
+    attributes:
+      label: Obsidian Installer Version
+      description: Found in Settings → About → Installer version. This is different from the app version and matters for native module issues.
+      placeholder: "e.g. 1.1.16"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS 15 (Sequoia)
+        - macOS 14 (Sonoma)
+        - macOS 13 (Ventura)
+        - Ubuntu / Debian Linux
+        - Fedora / RHEL Linux
+        - Other Linux
+        - iOS
+        - Android
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: OS Version (if not listed above)
+      placeholder: "e.g. Windows 10 22H2, Ubuntu 24.04"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: conflict-check
+    attributes:
+      label: Conflict Check
+      options:
+        - label: I tested with all other community plugins disabled and the bug still occurs.
+        - label: I tested with the default theme (no custom CSS snippets) and the bug still occurs.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Screenshots, screen recordings, related issues, or anything else that might help.
+    validations:
+      required: false
