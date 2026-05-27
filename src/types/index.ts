@@ -1,5 +1,15 @@
 import type { TFile } from "obsidian";
 
+export type ExportTarget =
+	| {
+			type: "file-system-access";
+			handle: FileSystemDirectoryHandle;
+	  }
+	| {
+			type: "local";
+			path: string;
+	  };
+
 // Plugin Settings Interface
 export interface ExportPluginSettings {
 	linkDepth: number;
@@ -19,7 +29,7 @@ export interface ExportModalResult {
 	useHeaderHierarchy: boolean; // Whether to organize files by header structure in source note
 	headerMap: Map<string, string[][]>; // Map of file paths to their header hierarchy paths
 	selectedFiles: TFile[]; // The list of files selected for export
-	targetDir?: FileSystemDirectoryHandle; // Directory selected for export (must be picked in user gesture context)
+	target?: ExportTarget; // Directory selected for export
 }
 
 // Filtered File Interface
