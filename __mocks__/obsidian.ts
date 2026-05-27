@@ -34,3 +34,13 @@ export const Plugin = class { };
 export const PluginSettingTab = class { };
 export const Setting = class { };
 export const normalizePath = (path: string) => path;
+export const Platform = {
+    isDesktop: true,
+    isMobile: false,
+    isDesktopApp: false,
+    isMobileApp: false,
+    isIosApp: false,
+    isAndroidApp: false,
+    isPhone: false,
+    isTablet: false,
+};

@@ -1,8 +1,17 @@
-import { TFile, Notice, App } from "obsidian";
+import { TFile, Notice, App, Platform } from "obsidian";
 import { HeaderHierarchy } from "./header-hierarchy";
+import type { ExportTarget } from "../types";
+
+type ElectronDialog = {
+	showOpenDialog(options: {
+		properties: string[];
+	}): Promise<{ canceled: boolean; filePaths: string[] }>;
+};
 
 export class ExportService {
 	private app: App;
+	private directoryPickerPromise: Promise<ExportTarget | null> | null =
+		null;
 
 	constructor(app: App) {
 		this.app = app;
@@ -13,7 +22,7 @@ export class ExportService {
 	 */
 	async exportFiles(
 		files: TFile[],
-		targetDir: FileSystemDirectoryHandle,
+		target: ExportTarget,
 		createZip: boolean = false,
 		keepFolderStructure: boolean = false,
 		useHeaderHierarchy: boolean = false,
@@ -24,7 +33,7 @@ export class ExportService {
 			if (createZip) {
 				await this.exportAsZip(
 					files,
-					targetDir,
+					target,
 					keepFolderStructure,
 					useHeaderHierarchy,
 					headerMap,
@@ -33,7 +42,7 @@ export class ExportService {
 			} else {
 				await this.exportAsFiles(
 					files,
-					targetDir,
+					target,
 					keepFolderStructure,
 					useHeaderHierarchy,
 					headerMap,
@@ -53,7 +62,7 @@ export class ExportService {
 	 */
 	private async exportAsFiles(
 		files: TFile[],
-		targetDir: FileSystemDirectoryHandle,
+		target: ExportTarget,
 		keepFolderStructure: boolean,
 		useHeaderHierarchy: boolean,
 		headerMap: Map<string, string[][]>,
@@ -77,7 +86,7 @@ export class ExportService {
 						exportedPaths.add(exportPath);
 						await this.exportSingleFile(
 							file,
-							targetDir,
+							target,
 							keepFolderStructure,
 							useHeaderHierarchy,
 							exportPath,
@@ -90,7 +99,7 @@ export class ExportService {
 			for (const file of files) {
 				await this.exportSingleFile(
 					file,
-					targetDir,
+					target,
 					keepFolderStructure,
 					useHeaderHierarchy,
 					"",
@@ -104,7 +113,7 @@ export class ExportService {
 	 */
 	private async exportAsZip(
 		files: TFile[],
-		targetDir: FileSystemDirectoryHandle,
+		target: ExportTarget,
 		keepFolderStructure: boolean,
 		useHeaderHierarchy: boolean,
 		headerMap: Map<string, string[][]>,
@@ -153,14 +162,7 @@ export class ExportService {
 
 		// Generate ZIP content
 		const zipBlob = await zip.generateAsync({ type: "blob" });
-
-		// Save ZIP file to target directory
-		const zipFileHandle = await targetDir.getFileHandle("export.zip", {
-			create: true,
-		});
-		const writable = await zipFileHandle.createWritable();
-		await writable.write(zipBlob);
-		await writable.close();
+		await this.writeExportFile(target, "export.zip", zipBlob);
 	}
 
 	/**
@@ -168,7 +170,7 @@ export class ExportService {
 	 */
 	private async exportSingleFile(
 		file: TFile,
-		targetDir: FileSystemDirectoryHandle,
+		target: ExportTarget,
 		keepFolderStructure: boolean,
 		useHeaderHierarchy: boolean,
 		headerHierarchyPath: string = "",
@@ -187,14 +189,7 @@ export class ExportService {
 				? headerHierarchyPath
 				: this.getExportFilePath(file, keepFolderStructure);
 
-		const targetFileHandle = await this.createNestedFile(
-			targetDir,
-			targetPath,
-		);
-
-		const writable = await targetFileHandle.createWritable();
-		await writable.write(processedContent);
-		await writable.close();
+		await this.writeExportFile(target, targetPath, processedContent);
 	}
 
 	/**
@@ -232,11 +227,87 @@ export class ExportService {
 		return await currentDir.getFileHandle(fileName, { create: true });
 	}
 
+	private async writeExportFile(
+		target: ExportTarget,
+		filePath: string,
+		content: string | ArrayBuffer | Blob,
+	): Promise<void> {
+		if (target.type === "local") {
+			await this.writeLocalFile(target.path, filePath, content);
+			return;
+		}
+
+		const targetFileHandle = await this.createNestedFile(
+			target.handle,
+			filePath,
+		);
+		const writable = await targetFileHandle.createWritable();
+		await writable.write(content);
+		await writable.close();
+	}
+
+	private async writeLocalFile(
+		targetDirPath: string,
+		filePath: string,
+		content: string | ArrayBuffer | Blob,
+	): Promise<void> {
+		const fs = require("fs/promises");
+		const path = require("path");
+		const outputPath = path.join(
+			targetDirPath,
+			...filePath.split("/").filter(Boolean),
+		);
+		await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
+		if (typeof content === "string") {
+			await fs.writeFile(outputPath, content, "utf8");
+			return;
+		}
+
+		if (content instanceof Blob) {
+			const arrayBuffer = await content.arrayBuffer();
+			await fs.writeFile(outputPath, Buffer.from(arrayBuffer));
+			return;
+		}
+
+		await fs.writeFile(outputPath, Buffer.from(content));
+	}
+
 	/**
 	 * Show directory picker and return selected directory
 	 */
-	async showDirectoryPicker(): Promise<FileSystemDirectoryHandle | null> {
+	async showDirectoryPicker(): Promise<ExportTarget | null> {
+		if (this.directoryPickerPromise) {
+			return this.directoryPickerPromise;
+		}
+
+		this.directoryPickerPromise = this.openDirectoryPicker();
 		try {
+			return await this.directoryPickerPromise;
+		} finally {
+			this.directoryPickerPromise = null;
+		}
+	}
+
+	private async openDirectoryPicker(): Promise<ExportTarget | null> {
+		try {
+			if (Platform.isDesktopApp) {
+				const electronDialog = this.getElectronDialog();
+				if (electronDialog) {
+					const result = await electronDialog.showOpenDialog({
+						properties: ["openDirectory", "createDirectory"],
+					});
+					if (result.canceled || result.filePaths.length === 0) {
+						return null;
+					}
+
+					return {
+						type: "local",
+						path: result.filePaths[0],
+					};
+				}
+			}
+
 			// Check if the File System Access API is supported
 			if (!("showDirectoryPicker" in window)) {
 				new Notice(
@@ -246,15 +317,28 @@ export class ExportService {
 				return null;
 			}
 
-			return await window.showDirectoryPicker({
+			const handle = await window.showDirectoryPicker({
 				mode: "readwrite",
 			});
+			return {
+				type: "file-system-access",
+				handle,
+			};
 		} catch (error) {
 			if (error.name === "AbortError") {
 				// User cancelled the directory picker
 				return null;
 			}
 			throw error;
+		}
+	}
+
+	private getElectronDialog(): ElectronDialog | null {
+		try {
+			const electron = require("electron");
+			return electron.remote?.dialog ?? null;
+		} catch (_error) {
+			return null;
 		}
 	}
 }
