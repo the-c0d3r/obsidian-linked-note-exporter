@@ -1,7 +1,11 @@
 import { LinkExtractor } from "../../src/utils/link-extractor";
 import { FilterUtils } from "../../src/utils/filter-utils";
 import { HeaderHierarchy } from "../../src/utils/header-hierarchy";
-import { TFile } from "obsidian";
+import { ExportService } from "../../src/utils/export-service";
+import { Platform, TFile } from "obsidian";
+import fs from "fs/promises";
+import os from "os";
+import path from "path";
 
 describe("FileUtils", () => {
 	describe("getLinkedPaths", () => {
@@ -132,6 +136,165 @@ describe("FileUtils", () => {
 			expect(
 				FilterUtils.matchesIgnore("#work/project", ["#personal/*"]),
 			).toBe(false);
+		});
+	});
+});
+
+describe("ExportService", () => {
+	describe("showDirectoryPicker", () => {
+		const originalWindow = global.window;
+		const originalDesktopApp = Platform.isDesktopApp;
+
+		afterEach(() => {
+			global.window = originalWindow;
+			Platform.isDesktopApp = originalDesktopApp;
+			jest.restoreAllMocks();
+		});
+
+		it("should reuse an in-flight File System Access directory picker request", async () => {
+			const directoryHandle = { kind: "directory", name: "export" };
+			let resolvePicker: (value: unknown) => void;
+			const pickerPromise = new Promise((resolve) => {
+				resolvePicker = resolve;
+			});
+			const showDirectoryPicker = jest.fn(() => pickerPromise);
+			global.window = { showDirectoryPicker } as unknown as Window &
+				typeof globalThis;
+
+			const service = new ExportService({} as any);
+			const firstRequest = service.showDirectoryPicker();
+			const secondRequest = service.showDirectoryPicker();
+
+			expect(showDirectoryPicker).toHaveBeenCalledTimes(1);
+
+			resolvePicker!(directoryHandle);
+			await expect(firstRequest).resolves.toEqual({
+				type: "file-system-access",
+				handle: directoryHandle,
+			});
+			await expect(secondRequest).resolves.toEqual({
+				type: "file-system-access",
+				handle: directoryHandle,
+			});
+		});
+
+		it("should use Electron's native directory picker on desktop", async () => {
+			Platform.isDesktopApp = true;
+			const showOpenDialog = jest.fn().mockResolvedValue({
+				canceled: false,
+				filePaths: ["/tmp/export-target"],
+			});
+			jest.spyOn(
+				ExportService.prototype as any,
+				"getElectronDialog",
+			).mockReturnValue({ showOpenDialog });
+			global.window = {} as Window & typeof globalThis;
+
+			const service = new ExportService({} as any);
+
+			await expect(service.showDirectoryPicker()).resolves.toEqual({
+				type: "local",
+				path: "/tmp/export-target",
+			});
+			expect(showOpenDialog).toHaveBeenCalledWith({
+				properties: ["openDirectory", "createDirectory"],
+			});
+		});
+
+		it("should reuse an in-flight Electron directory picker request", async () => {
+			Platform.isDesktopApp = true;
+			let resolvePicker: (value: unknown) => void;
+			const pickerPromise = new Promise((resolve) => {
+				resolvePicker = resolve;
+			});
+			const showOpenDialog = jest.fn(() => pickerPromise);
+			jest.spyOn(
+				ExportService.prototype as any,
+				"getElectronDialog",
+			).mockReturnValue({ showOpenDialog });
+			global.window = {} as Window & typeof globalThis;
+
+			const service = new ExportService({} as any);
+			const firstRequest = service.showDirectoryPicker();
+			const secondRequest = service.showDirectoryPicker();
+
+			expect(showOpenDialog).toHaveBeenCalledTimes(1);
+
+			resolvePicker!({
+				canceled: false,
+				filePaths: ["/tmp/export-target"],
+			});
+			await expect(firstRequest).resolves.toEqual({
+				type: "local",
+				path: "/tmp/export-target",
+			});
+			await expect(secondRequest).resolves.toEqual({
+				type: "local",
+				path: "/tmp/export-target",
+			});
+		});
+	});
+
+	describe("exportFiles", () => {
+		let tempDir: string;
+
+		afterEach(async () => {
+			if (tempDir) {
+				await fs.rm(tempDir, { recursive: true, force: true });
+			}
+			jest.restoreAllMocks();
+		});
+
+		it("should write exported files to a local desktop path", async () => {
+			tempDir = await fs.mkdtemp(
+				path.join(os.tmpdir(), "linked-note-exporter-"),
+			);
+			const file = new TFile();
+			file.path = "Folder/Note.md";
+			file.name = "Note.md";
+			file.extension = "md";
+			const app = {
+				vault: {
+					read: jest.fn().mockResolvedValue("# Note"),
+				},
+			};
+
+			const service = new ExportService(app as any);
+			await service.exportFiles(
+				[file],
+				{ type: "local", path: tempDir },
+				false,
+				true,
+			);
+
+			await expect(
+				fs.readFile(path.join(tempDir, "Folder", "Note.md"), "utf8"),
+			).resolves.toBe("# Note");
+		});
+
+		it("should write ZIP exports to a local desktop path", async () => {
+			tempDir = await fs.mkdtemp(
+				path.join(os.tmpdir(), "linked-note-exporter-"),
+			);
+			const file = new TFile();
+			file.path = "Note.md";
+			file.name = "Note.md";
+			file.extension = "md";
+			const app = {
+				vault: {
+					read: jest.fn().mockResolvedValue("# Note"),
+				},
+			};
+
+			const service = new ExportService(app as any);
+			await service.exportFiles(
+				[file],
+				{ type: "local", path: tempDir },
+				true,
+			);
+
+			const zipStat = await fs.stat(path.join(tempDir, "export.zip"));
+			expect(zipStat.size).toBeGreaterThan(0);
 		});
 	});
 });

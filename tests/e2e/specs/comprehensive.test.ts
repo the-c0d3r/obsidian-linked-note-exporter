@@ -80,9 +80,11 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 			);
 		});
 
-		// Mock showDirectoryPicker
+		// Mock the plugin directory picker so desktop e2e tests do not open a
+		// native OS dialog.
 		await browser.execute(() => {
 			const app = (window as any).app;
+			const plugin = app.plugins.plugins["linked-note-exporter"];
 
 			async function createMockDirHandle(dirPath: string): Promise<any> {
 				return {
@@ -128,13 +130,16 @@ describe("Linked Note Exporter - Comprehensive Tests", () => {
 				(window as any).currentScenarioDir = `test-output-${id}`;
 			};
 
-			window.showDirectoryPicker = async () => {
+			plugin.exportService.showDirectoryPicker = async () => {
 				const dirName =
 					(window as any).currentScenarioDir || "test-output-default";
 				if (!(await app.vault.adapter.exists(dirName))) {
 					await app.vault.adapter.mkdir(dirName);
 				}
-				return createMockDirHandle(dirName);
+				return {
+					type: "file-system-access",
+					handle: await createMockDirHandle(dirName),
+				};
 			};
 		});
 	});

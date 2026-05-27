@@ -81,14 +81,14 @@ export default class ExportPlugin extends Plugin {
 			// to preserve the transient user activation context required by the File System Access API.
 			const result = await this.showExportModal(sourceFile);
 
-			if (!result.confirmed || !result.targetDir) {
+			if (!result.confirmed || !result.target) {
 				return; // User cancelled
 			}
 
 			// Perform the export
 			await this.exportService.exportFiles(
 				result.selectedFiles,
-				result.targetDir,
+				result.target,
 				result.createZip,
 				result.keepFolderStructure,
 				result.useHeaderHierarchy,

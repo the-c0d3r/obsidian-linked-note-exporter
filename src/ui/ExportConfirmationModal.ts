@@ -1,5 +1,5 @@
 import { Modal, TFile, App, Notice } from "obsidian";
-import { ExportModalResult, FilteredFile } from "../types";
+import type { ExportModalResult, ExportTarget, FilteredFile } from "../types";
 
 import { LinkExtractor } from "../utils/link-extractor";
 import { FilterUtils } from "../utils/filter-utils";
@@ -175,9 +175,9 @@ export class ExportConfirmationModal extends Modal {
 			// to preserve the transient user activation context required by the File System Access API.
 			// Moving this call outside the click handler (e.g., after awaiting a modal) causes
 			// DOMException on Windows: "The request is not allowed by the user agent or the platform"
-			let targetDir: FileSystemDirectoryHandle | null = null;
+			let target: ExportTarget | null = null;
 			try {
-				targetDir = await this.exportService.showDirectoryPicker();
+				target = await this.exportService.showDirectoryPicker();
 			} catch (error) {
 				// console.error removed for compliance
 				new Notice(
@@ -187,7 +187,7 @@ export class ExportConfirmationModal extends Modal {
 				return; // Don't close modal on error
 			}
 
-			if (!targetDir) {
+			if (!target) {
 				// User cancelled directory selection, keep modal open
 				return;
 			}
@@ -201,7 +201,7 @@ export class ExportConfirmationModal extends Modal {
 					this.settingsSection.useHeaderHierarchyToggle.checked,
 				selectedFiles: this.getSelectedFiles(),
 				headerMap: this.settingsSection.headerMap,
-				targetDir,
+				target,
 			});
 			this.close();
 		});
