@@ -1,12 +1,13 @@
 export const EXPORT_MODAL_STYLE_ID = "export-modal-styles";
 
 export const injectExportModalStyles = () => {
-    let styleEl = document.getElementById(EXPORT_MODAL_STYLE_ID) as HTMLStyleElement;
+    const doc = activeDocument;
+    let styleEl = doc.getElementById(EXPORT_MODAL_STYLE_ID) as HTMLStyleElement;
 
     if (!styleEl) {
-        styleEl = document.createElement("style");
+        styleEl = doc.createElement("style");
         styleEl.id = EXPORT_MODAL_STYLE_ID;
-        document.head.appendChild(styleEl);
+        doc.head.appendChild(styleEl);
     }
 
     styleEl.textContent = `
@@ -335,6 +336,89 @@ export const injectExportModalStyles = () => {
             border-radius: 4px;
             width: 100%;
             font-size: 0.9em;
+        }
+
+        /* Root modal background */
+        .export-modal-root {
+            background-color: var(--background-primary);
+        }
+
+        /* File list container constraints */
+        .export-file-list-scroll {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        /* Stat item muted color */
+        .stat-item-muted {
+            color: var(--text-muted);
+        }
+
+        /* Filtered file count error color */
+        .stat-item-error {
+            color: var(--text-error);
+        }
+
+        /* File name color override */
+        .file-name-visible {
+            color: var(--text-normal);
+            opacity: 1;
+        }
+
+        /* Filtered icon */
+        .icon-filtered {
+            filter: grayscale(1);
+        }
+
+        /* Ignored tag highlight */
+        .tag-ignored {
+            color: var(--text-error) !important;
+            font-weight: 600;
+        }
+
+        /* Ignore inputs row */
+        .ignore-inputs-row {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .ignore-input-flex {
+            flex: 1;
+        }
+
+        /* Settings group layout */
+        .settings-group-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Toggle grid layout */
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        /* Tree spacer visibility */
+        .tree-spacer {
+            visibility: hidden;
+        }
+
+        /* Collapsible icon rotation */
+        .collapsible-icon-open {
+            transform: rotate(0deg);
+        }
+
+        /* Ignore setting item layout */
+        .ignore-setting-item {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
         }
     `;
 };

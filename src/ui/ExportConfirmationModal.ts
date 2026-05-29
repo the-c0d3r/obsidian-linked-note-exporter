@@ -8,6 +8,7 @@ import { injectExportModalStyles } from "./styles/ExportModalStyles";
 import { FileTreeComponent } from "./components/FileTreeComponent";
 import { ExportSettingsSection } from "./components/ExportSettingsSection";
 import { ExportService } from "../utils/export-service";
+import ExportPlugin from "../ExportPlugin";
 
 export class ExportConfirmationModal extends Modal {
 	private resolve: (value: ExportModalResult) => void;
@@ -15,7 +16,7 @@ export class ExportConfirmationModal extends Modal {
 	private filesToExport: Map<string, TFile>;
 	private filteredFiles: Map<string, FilteredFile>;
 	private fileCheckboxes: Map<string, HTMLInputElement>;
-	private plugin: any;
+	private plugin: ExportPlugin;
 	private headerMap: Map<string, string[][]>;
 	private parentMap: Map<string, Set<string>>;
 	private depthMap: Map<string, number>;
@@ -33,7 +34,7 @@ export class ExportConfirmationModal extends Modal {
 		defaultkeepFolderStructureSetting: boolean,
 		defaultUseHeaderHierarchy: boolean,
 		resolve: (value: ExportModalResult) => void,
-		plugin: any,
+		plugin: ExportPlugin,
 		exportService: ExportService,
 	) {
 		super(app);
@@ -50,7 +51,7 @@ export class ExportConfirmationModal extends Modal {
 		this.childrenMap = new Map();
 
 		// Handle mutual exclusivity for initial settings
-		let zip = defaultZipSetting;
+		const zip = defaultZipSetting;
 		let folders = defaultkeepFolderStructureSetting;
 		let headers = defaultUseHeaderHierarchy;
 
@@ -97,7 +98,6 @@ export class ExportConfirmationModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass("export-modal-root");
-		contentEl.style.backgroundColor = "var(--background-primary)";
 
 		injectExportModalStyles();
 
@@ -123,21 +123,13 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private createSourceInfo() {
-		const container = this.contentEl.createEl("div", {
-			cls: "export-source-info",
-		});
+		const container = this.contentEl.createDiv({ cls: "export-source-info" });
 
-		const details = container.createEl("div", { cls: "source-details" });
-		details.createEl("span", {
-			cls: "source-label",
-			text: "Exporting Note:",
-		});
-		details.createEl("span", {
-			cls: "source-name",
-			text: this.sourceFile.basename,
-		});
+		const details = container.createDiv({ cls: "source-details" });
+		details.createSpan({ cls: "source-label", text: "Exporting Note:" });
+		details.createSpan({ cls: "source-name", text: this.sourceFile.basename });
 
-		const stats = container.createEl("div", {
+		container.createDiv({
 			cls: "source-stats",
 			attr: { id: "source-stats-container" },
 		});
@@ -145,27 +137,22 @@ export class ExportConfirmationModal extends Modal {
 	}
 
 	private createFileList() {
-		const fileListHeader = this.contentEl.createEl("div", {
-			cls: "file-list-header",
-		});
-		fileListHeader.createEl("span", { text: "Files:" });
-		const selectedCount = fileListHeader.createEl("span", {
+		const fileListHeader = this.contentEl.createDiv({ cls: "file-list-header" });
+		fileListHeader.createSpan({ text: "Files:" });
+		fileListHeader.createSpan({
 			cls: "file-meta",
 			attr: { id: "selected-file-count" },
 		});
 
-		const fileListContainer = this.contentEl.createEl("div", {
-			cls: "export-file-list",
+		const fileListContainer = this.contentEl.createDiv({
+			cls: "export-file-list export-file-list-scroll",
 		});
-		fileListContainer.style.maxHeight = "500px";
-		fileListContainer.style.overflowY = "auto";
-		fileListContainer.style.marginBottom = "15px";
 
 		this.treeComponent.render(fileListContainer, this.sourceFile);
 	}
 
 	private createButtons() {
-		const buttonContainer = this.contentEl.createEl("div", {
+		const buttonContainer = this.contentEl.createDiv({
 			cls: "modal-button-container",
 			attr: { style: "margin-top: 20px;" },
 		});
@@ -227,24 +214,20 @@ export class ExportConfirmationModal extends Modal {
 		if (statsContainer) {
 			statsContainer.empty();
 
-			const included = statsContainer.createEl("span", {
-				cls: "stat-item",
-			});
+			const included = statsContainer.createSpan({ cls: "stat-item" });
 			included.createEl("strong", { text: `${this.filesToExport.size}` });
 			included.createSpan({ text: " included" });
 
-			statsContainer.createEl("span", {
-				cls: "stat-item",
+			statsContainer.createSpan({
+				cls: "stat-item stat-item-muted",
 				text: "•",
-			}).style.color = "var(--text-muted)";
-
-			const filtered = statsContainer.createEl("span", {
-				cls: "stat-item",
 			});
+
+			const filtered = statsContainer.createSpan({ cls: "stat-item" });
 			filtered.createEl("strong", { text: `${this.filteredFiles.size}` });
 			filtered.createSpan({ text: " filtered" });
 			if (this.filteredFiles.size > 0) {
-				filtered.style.color = "var(--text-error)";
+				filtered.addClass("stat-item-error");
 			}
 		}
 		this.updateSelectedCount();
@@ -291,8 +274,6 @@ export class ExportConfirmationModal extends Modal {
 
 		const allFilesToCopy = new Map<string, TFile>();
 		const visited = new Set<string>();
-		const parentMap = new Map<string, Set<string>>();
-		const depthMap = new Map<string, number>();
 		this.childrenMap.clear();
 
 		const processFile = async (

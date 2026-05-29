@@ -51,7 +51,7 @@ export class FilterUtils {
         const frontmatterTags = this.normalizeTags(cache.frontmatter?.tags);
 
         // Get inline tags
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Obsidian TagCache type lacks a public .tag definition
         const inlineTags = (cache.tags ?? []).map((t: any) => t.tag);
 
         // Combine and return unique tags

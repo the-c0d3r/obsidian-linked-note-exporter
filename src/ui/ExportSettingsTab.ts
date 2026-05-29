@@ -1,5 +1,4 @@
 import { PluginSettingTab, Setting, App } from "obsidian";
-import { ExportPluginSettings } from "../types";
 import { DEFAULT_SETTINGS } from "../utils/constants";
 import ExportPlugin from "../ExportPlugin";
 

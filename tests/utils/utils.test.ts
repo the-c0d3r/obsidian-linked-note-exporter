@@ -302,11 +302,11 @@ describe("extractLinksFromContent", () => {
 describe("getHeaderPathAtPosition", () => {
 	it("should return correct path", () => {
 		const headings = [
-			{ level: 1, heading: "Title", position: { start: { offset: 0 } } },
+			{ level: 1, heading: "Title", position: { start: { offset: 0, line: 0, col: 0 }, end: { offset: 0, line: 0, col: 0 } } },
 			{
 				level: 2,
 				heading: "Section",
-				position: { start: { offset: 50 } },
+				position: { start: { offset: 50, line: 0, col: 0 }, end: { offset: 50, line: 0, col: 0 } },
 			},
 		];
 		expect(
@@ -316,10 +316,10 @@ describe("getHeaderPathAtPosition", () => {
 
 	it("should respect hierarchy nesting", () => {
 		const headings = [
-			{ level: 1, heading: "H1", position: { start: { offset: 0 } } },
-			{ level: 2, heading: "H2-A", position: { start: { offset: 20 } } },
-			{ level: 2, heading: "H2-B", position: { start: { offset: 40 } } },
-			{ level: 3, heading: "H3", position: { start: { offset: 60 } } },
+			{ level: 1, heading: "H1", position: { start: { offset: 0, line: 0, col: 0 }, end: { offset: 0, line: 0, col: 0 } } },
+			{ level: 2, heading: "H2-A", position: { start: { offset: 20, line: 0, col: 0 }, end: { offset: 20, line: 0, col: 0 } } },
+			{ level: 2, heading: "H2-B", position: { start: { offset: 40, line: 0, col: 0 }, end: { offset: 40, line: 0, col: 0 } } },
+			{ level: 3, heading: "H3", position: { start: { offset: 60, line: 0, col: 0 }, end: { offset: 60, line: 0, col: 0 } } },
 		];
 		expect(
 			HeaderHierarchy.getHeaderPathAtPosition(70, headings, "File"),
@@ -331,12 +331,12 @@ describe("getHeaderPathAtPosition", () => {
 			{
 				level: 1,
 				heading: "My Note",
-				position: { start: { offset: 0 } },
+				position: { start: { offset: 0, line: 0, col: 0 }, end: { offset: 0, line: 0, col: 0 } },
 			},
 			{
 				level: 2,
 				heading: "Section",
-				position: { start: { offset: 50 } },
+				position: { start: { offset: 50, line: 0, col: 0 }, end: { offset: 50, line: 0, col: 0 } },
 			},
 		];
 		expect(
@@ -550,7 +550,7 @@ describe("buildHeaderHierarchyAsync", () => {
 				{
 					level: 1,
 					heading: "Section 1",
-					position: { start: { offset: 0 } },
+					position: { start: { offset: 0, line: 0, col: 0 }, end: { offset: 0, line: 0, col: 0 } },
 				},
 			],
 		});
@@ -576,7 +576,7 @@ describe("buildHeaderHierarchyAsync", () => {
 				{
 					level: 1,
 					heading: "Section 1",
-					position: { start: { offset: 0 } },
+					position: { start: { offset: 0, line: 0, col: 0 }, end: { offset: 0, line: 0, col: 0 } },
 				},
 			],
 		});

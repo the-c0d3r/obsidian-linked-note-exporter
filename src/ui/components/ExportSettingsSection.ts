@@ -35,28 +35,20 @@ export class ExportSettingsSection {
 	}
 
 	render(container: HTMLElement) {
-		const section = container.createEl("div", {
-			cls: "collapsible-section",
-		});
+		const section = container.createDiv({ cls: "collapsible-section" });
 
 		// --- Header ---
-		const header = section.createEl("div", { cls: "collapsible-header" });
-		const icon = header.createEl("span", {
-			cls: "collapsible-icon",
-			text: "▶",
-		});
-		header.createEl("span", { text: "Configure Export" });
+		const header = section.createDiv({ cls: "collapsible-header" });
+		const icon = header.createSpan({ cls: "collapsible-icon", text: "▶" });
+		header.createSpan({ text: "Configure Export" });
 
 		// --- Content ---
-		const content = section.createEl("div", {
+		const content = section.createDiv({
 			cls: "collapsible-content",
 			attr: { id: "settings-content" },
 		});
 		const settingsGroup = content.createEl("div", {
-			cls: "settings-group",
-			attr: {
-				style: "display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;",
-			},
+			cls: "settings-group settings-group-layout",
 		});
 
 		this.createLinkDepthControl(settingsGroup);
@@ -68,27 +60,22 @@ export class ExportSettingsSection {
 			content.toggleClass("open", !content.hasClass("open"));
 			if (content.hasClass("open")) {
 				icon.textContent = "▼";
-				icon.style.transform = "rotate(0deg)";
+				icon.addClass("collapsible-icon-open");
 			} else {
 				icon.textContent = "▶";
+				icon.removeClass("collapsible-icon-open");
 			}
 		});
 	}
 
 	private createLinkDepthControl(container: HTMLElement) {
-		const item = container.createEl("div", { cls: "setting-item" });
+		const item = container.createDiv({ cls: "setting-item" });
 
-		const info = item.createEl("div", { cls: "setting-info" });
-		info.createEl("span", {
-			cls: "setting-label",
-			text: "Linked Notes Depth",
-		});
-		info.createEl("span", {
-			cls: "setting-desc",
-			text: "Includes notes linked by this note",
-		});
+		const info = item.createDiv({ cls: "setting-info" });
+		info.createSpan({ cls: "setting-label", text: "Linked Notes Depth" });
+		info.createSpan({ cls: "setting-desc", text: "Includes notes linked by this note" });
 
-		const rangeContainer = item.createEl("div", { cls: "range-container" });
+		const rangeContainer = item.createDiv({ cls: "range-container" });
 
 		this.linkDepthSlider = rangeContainer.createEl("input", {
 			type: "range",
@@ -101,13 +88,51 @@ export class ExportSettingsSection {
 		const linkDepthValue = rangeContainer.createEl("span");
 		linkDepthValue.textContent = this.context.currentLinkDepth.toString();
 
-		this.linkDepthSlider.oninput = async (e) => {
+		this.linkDepthSlider.oninput = (e) => {
 			const newDepth = parseInt((e.target as HTMLInputElement).value);
 			linkDepthValue.textContent = newDepth.toString();
 
 			if (newDepth !== this.context.currentLinkDepth) {
 				this.context.currentLinkDepth = newDepth;
-				await this.context.recalculateFiles();
+				void this.context.recalculateFiles().then(() => {
+					const fileListContainer = this.context.contentEl.querySelector(
+						".export-file-list",
+					) as HTMLElement;
+					if (fileListContainer) {
+						fileListContainer.empty();
+						this.context.renderFileList(fileListContainer);
+					}
+				});
+			}
+		};
+	}
+
+	private createIgnoreSettings(container: HTMLElement) {
+		const item = container.createDiv({ cls: "setting-item ignore-setting-item" });
+
+		const info = item.createDiv({ cls: "setting-info" });
+		info.createSpan({ cls: "setting-label", text: "Skip Content" });
+
+		const inputsRow = item.createDiv({ cls: "ignore-inputs-row" });
+
+		this.ignoreFoldersInput = inputsRow.createEl("input", {
+			type: "text",
+			cls: "ignore-input-flex",
+		});
+		this.ignoreFoldersInput.placeholder = "Folders (e.g. Templates)";
+		this.ignoreFoldersInput.value =
+			this.context.plugin.settings.ignoreFolders.join(", ");
+
+		this.ignoreTagsInput = inputsRow.createEl("input", {
+			type: "text",
+			cls: "ignore-input-flex",
+		});
+		this.ignoreTagsInput.placeholder = "Tags (e.g. #private)";
+		this.ignoreTagsInput.value =
+			this.context.plugin.settings.ignoreTags.join(", ");
+
+		const handleInput = () => {
+			void this.context.recalculateFiles().then(() => {
 				const fileListContainer = this.context.contentEl.querySelector(
 					".export-file-list",
 				) as HTMLElement;
@@ -115,46 +140,7 @@ export class ExportSettingsSection {
 					fileListContainer.empty();
 					this.context.renderFileList(fileListContainer);
 				}
-			}
-		};
-	}
-
-	private createIgnoreSettings(container: HTMLElement) {
-		const item = container.createEl("div", {
-			cls: "setting-item",
-			attr: {
-				style: "align-items: flex-start; flex-direction: column; gap: 8px;",
-			},
-		});
-
-		const info = item.createEl("div", { cls: "setting-info" });
-		info.createEl("span", { cls: "setting-label", text: "Skip Content" });
-
-		const inputsRow = item.createEl("div", {
-			attr: { style: "display: flex; gap: 10px; width: 100%;" },
-		});
-
-		this.ignoreFoldersInput = inputsRow.createEl("input", { type: "text" });
-		this.ignoreFoldersInput.placeholder = "Folders (e.g. Templates)";
-		this.ignoreFoldersInput.value =
-			this.context.plugin.settings.ignoreFolders.join(", ");
-		this.ignoreFoldersInput.style.flex = "1";
-
-		this.ignoreTagsInput = inputsRow.createEl("input", { type: "text" });
-		this.ignoreTagsInput.placeholder = "Tags (e.g. #private)";
-		this.ignoreTagsInput.value =
-			this.context.plugin.settings.ignoreTags.join(", ");
-		this.ignoreTagsInput.style.flex = "1";
-
-		const handleInput = async () => {
-			await this.context.recalculateFiles();
-			const fileListContainer = this.context.contentEl.querySelector(
-				".export-file-list",
-			) as HTMLElement;
-			if (fileListContainer) {
-				fileListContainer.empty();
-				this.context.renderFileList(fileListContainer);
-			}
+			});
 		};
 
 		this.ignoreFoldersInput.addEventListener("input", handleInput);
@@ -162,24 +148,17 @@ export class ExportSettingsSection {
 	}
 
 	private createToggleButtons(container: HTMLElement) {
-		const grid = container.createEl("div", {
-			attr: {
-				style: "display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 5px;",
-			},
-		});
+		const grid = container.createEl("div", { cls: "toggle-grid" });
 
 		const createToggleItem = (
 			label: string,
 			title: string,
 			defaultChecked: boolean,
 		) => {
-			const item = grid.createEl("div", { cls: "setting-item" });
-			item.createEl("span", { cls: "setting-label", text: label }).title =
-				title;
+			const item = grid.createDiv({ cls: "setting-item" });
+			item.createSpan({ cls: "setting-label", text: label }).title = title;
 
-			const toggleWrapper = item.createEl("div", {
-				cls: "toggle-switch",
-			});
+			const toggleWrapper = item.createDiv({ cls: "toggle-switch" });
 			if (defaultChecked) toggleWrapper.addClass("active");
 			toggleWrapper.createEl("div", { cls: "toggle-knob" });
 
@@ -188,7 +167,6 @@ export class ExportSettingsSection {
 				cls: "toggle-switch-input",
 			});
 			input.checked = defaultChecked;
-			input.style.display = "none";
 
 			toggleWrapper.addEventListener("click", () => {
 				input.checked = !input.checked;
@@ -231,7 +209,7 @@ export class ExportSettingsSection {
 			}
 		});
 
-		this.useHeaderHierarchyToggle.addEventListener("change", async () => {
+		this.useHeaderHierarchyToggle.addEventListener("change", () => {
 			if (this.useHeaderHierarchyToggle.checked) {
 				if (this.keepFolderStructureToggle.checked) {
 					const wrapper =
@@ -239,29 +217,31 @@ export class ExportSettingsSection {
 					if (wrapper) wrapper.click();
 				}
 
-				this.headerMap =
-					await HeaderHierarchy.buildHeaderHierarchyAsync(
-						this.context.sourceFile,
-						this.context.plugin.app,
-						Array.from(this.context.filesToExport.values()),
-						this.context.parentMap,
-						this.context.depthMap,
-					);
+				void HeaderHierarchy.buildHeaderHierarchyAsync(
+					this.context.sourceFile,
+					this.context.plugin.app,
+					Array.from(this.context.filesToExport.values()),
+					this.context.parentMap,
+					this.context.depthMap,
+				).then((headerMap) => {
+					this.headerMap = headerMap;
+				});
 			} else {
 				this.headerMap = new Map();
 			}
 		});
 
 		// Recalculate files when backlinks toggle changes
-		this.includeBacklinksToggle.addEventListener("change", async () => {
-			await this.context.recalculateFiles();
-			const fileListContainer = this.context.contentEl.querySelector(
-				".export-file-list",
-			) as HTMLElement;
-			if (fileListContainer) {
-				fileListContainer.empty();
-				this.context.renderFileList(fileListContainer);
-			}
+		this.includeBacklinksToggle.addEventListener("change", () => {
+			void this.context.recalculateFiles().then(() => {
+				const fileListContainer = this.context.contentEl.querySelector(
+					".export-file-list",
+				) as HTMLElement;
+				if (fileListContainer) {
+					fileListContainer.empty();
+					this.context.renderFileList(fileListContainer);
+				}
+			});
 		});
 	}
 

@@ -110,37 +110,37 @@ export class FileTreeComponent {
 		container: HTMLElement,
 		file: TFile,
 		depth: number,
-		indentGuides: string[],
+		_indentGuides: string[],
 		isFiltered: boolean,
-		isLastChild: boolean,
-		filterReason?: string,
+		_isLastChild: boolean,
+		_filterReason?: string,
 	) {
 		// Use inline style for opacity to guarantee it works
 		const itemStyle = isFiltered
 			? "opacity: 0.7;"
 			: "opacity: 1 !important;";
 
-		const item = container.createEl("div", {
+		const item = container.createDiv({
 			cls: `file-tree-item${isFiltered ? " filtered" : ""}`,
 			attr: { style: itemStyle },
 		});
 
 		// Tree Indent - invisible spacer to maintain indentation
-		const treeIndent = item.createEl("div", { cls: "tree-indent" });
+		const treeIndent = item.createDiv({ cls: "tree-indent" });
 
 		// The root node (depth 0) has no indent
 		if (depth > 0) {
 			// Just add invisible spacers based on depth
 			for (let i = 0; i < depth; i++) {
-				const spacer = treeIndent.createEl("div", { cls: "tree-line" });
-				spacer.style.visibility = "hidden";
+				const spacer = treeIndent.createEl("div", {
+					cls: "tree-line tree-spacer",
+				});
 				spacer.textContent = "  "; // Invisible spacing
 			}
 		}
 
-		const wrapper = item.createEl("div", { cls: "file-content-wrapper" });
-		// Root node special margin
-		if (depth === 0) wrapper.style.marginLeft = "0";
+		const wrapper = item.createDiv({ cls: "file-content-wrapper" });
+		// Root node has no additional margin (default is 0)
 
 		// Checkbox - Nuclear option for styling
 		const checkbox = wrapper.createEl("input", {
@@ -160,7 +160,7 @@ export class FileTreeComponent {
 		}
 
 		// Icon - choose based on file extension or backlink status
-		const icon = wrapper.createEl("span", { cls: "file-icon" });
+		const icon = wrapper.createSpan({ cls: "file-icon" });
 		const ext = file.extension.toLowerCase();
 		const isBacklink = this.context.getBacklinksSet().has(file.path);
 
@@ -177,21 +177,16 @@ export class FileTreeComponent {
 		} else {
 			icon.textContent = "\uD83D\uDCCE"; // 📎
 		}
-		if (isFiltered) icon.style.filter = "grayscale(1)";
+		if (isFiltered) icon.addClass("icon-filtered");
 
 		// Details
-		const details = wrapper.createEl("div", { cls: "file-details" });
-		const nameLine = details.createEl("div", {
-			cls: "file-name",
-			text: file.name,
-		});
+		const details = wrapper.createDiv({ cls: "file-details" });
+		const nameLine = details.createDiv({ cls: "file-name", text: file.name });
 
-		// Ensure file name color
-		nameLine.style.color = "var(--text-normal)";
-		nameLine.style.opacity = "1";
+		nameLine.addClass("file-name-visible");
 
 		// File path - highlight matching folder in red if filtered
-		const pathEl = details.createEl("div", { cls: "file-path" });
+		const pathEl = details.createDiv({ cls: "file-path" });
 		const ignoreFolders =
 			this.context
 				.getIgnoreFoldersInput()
@@ -230,7 +225,7 @@ export class FileTreeComponent {
 		// Tags - highlight matching tag in red if filtered by tag
 		const tags = FilterUtils.getFileTags(file, this.context.app);
 		if (tags.length > 0) {
-			const tagContainer = wrapper.createEl("div", { cls: "file-tags" });
+			const tagContainer = wrapper.createDiv({ cls: "file-tags" });
 			const ignoreTags =
 				this.context
 					.getIgnoreTagsInput()
@@ -239,18 +234,10 @@ export class FileTreeComponent {
 					.filter((t) => t) || [];
 
 			tags.forEach((tag) => {
-				const tagEl = tagContainer.createEl("span", {
-					cls: "tag",
-					text: tag,
-				});
+				const tagEl = tagContainer.createSpan({ cls: "tag", text: tag });
 				// Use FileUtils for reliable matching (handles wildcards like /*)
 				if (isFiltered && FilterUtils.matchesIgnore(tag, ignoreTags)) {
-					tagEl.style.setProperty(
-						"color",
-						"var(--text-error)",
-						"important",
-					);
-					tagEl.style.fontWeight = "600";
+					tagEl.addClass("tag-ignored");
 				}
 			});
 		}

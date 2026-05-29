@@ -1,4 +1,4 @@
-import { TFile, App } from "obsidian";
+import { TFile, App, HeadingCache } from "obsidian";
 import { LinkExtractor } from "./link-extractor";
 
 export class HeaderHierarchy {
@@ -143,7 +143,7 @@ export class HeaderHierarchy {
 	 */
 	static getHeaderPathAtPosition(
 		position: number,
-		headings: any[],
+		headings: HeadingCache[],
 		sourceFileName: string,
 	): string[] {
 		const path: string[] = [];
