@@ -55,11 +55,16 @@ export const config = {
 	capabilities: [
 		{
 			browserName: "obsidian",
+			"goog:chromeOptions": {
+				args: ["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+			},
 			"wdio:obsidianOptions": {
 				// Install the plugin from the current directory
 				plugins: ["."],
 				// Use a fresh test vault in .obsidian-vaults/e2e-vault
 				vault: "./.obsidian-vaults/e2e-vault",
+				// Use latest installer (Electron runtime) instead of default "earliest" (1.5.8)
+				installerVersion: "latest",
 			},
 		},
 	],
