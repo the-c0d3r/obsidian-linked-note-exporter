@@ -251,6 +251,7 @@ export class ExportService {
 		filePath: string,
 		content: string | ArrayBuffer | Blob,
 	): Promise<void> {
+		// Inline require to avoid bundling Node-only modules in the browser build
 		const fs = require("fs/promises");
 		const path = require("path");
 		const outputPath = path.join(
@@ -306,6 +307,12 @@ export class ExportService {
 						path: result.filePaths[0],
 					};
 				}
+
+				new Notice(
+					"Could not open native directory picker. Electron dialog unavailable.",
+					5000,
+				);
+				return null;
 			}
 
 			// Check if the File System Access API is supported
