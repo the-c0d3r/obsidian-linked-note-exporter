@@ -201,6 +201,26 @@ describe("ExportService", () => {
 			});
 		});
 
+		it("should show a notice and return null when on desktop but Electron dialog is unavailable", async () => {
+			Platform.isDesktopApp = true;
+			jest.spyOn(
+				ExportService.prototype as any,
+				"getElectronDialog",
+			).mockReturnValue(null);
+			global.window = {} as Window & typeof globalThis;
+
+			const noticeMock = jest.fn();
+			jest.mock("obsidian", () => ({
+				...jest.requireActual("obsidian"),
+				Notice: noticeMock,
+			}));
+
+			const service = new ExportService({} as any);
+			const result = await service.showDirectoryPicker();
+
+			expect(result).toBeNull();
+		});
+
 		it("should reuse an in-flight Electron directory picker request", async () => {
 			Platform.isDesktopApp = true;
 			let resolvePicker: (value: unknown) => void;
